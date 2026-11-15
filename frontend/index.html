@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ares Pathfinder — Mapa topográfico y rutas</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/styles.css?v=9">
+</head>
+<body>
+  <div id="sim-banner" class="sim-banner" role="note">
+    Proyecto de participantes de NASA Space Apps 2026. Cargando la fuente topográfica…
+  </div>
+
+  <div class="layout">
+    <aside class="panel" aria-label="Panel de control">
+      <h1>Ares Pathfinder</h1>
+      <p class="subtitle" id="zone-name">Cargando zona de estudio…</p>
+
+      <div id="status" class="status status-info" role="status" aria-live="polite">
+        Iniciando…
+      </div>
+      <button id="btn-retry" class="btn btn-secondary" type="button" hidden>
+        Reintentar conexión
+      </button>
+
+      <section class="card">
+        <h2>1. Selección de puntos</h2>
+        <p class="hint">Elige el modo y selecciona una celda del mapa.</p>
+        <div class="mode-buttons" role="group" aria-label="Modo de selección">
+          <button id="mode-origin" class="btn btn-mode active" type="button">Elegir origen</button>
+          <button id="mode-dest" class="btn btn-mode" type="button">Elegir destino</button>
+        </div>
+        <dl class="points">
+          <dt><span class="dot dot-origin"></span>Origen</dt>
+          <dd id="origin-label">sin seleccionar</dd>
+          <dt><span class="dot dot-dest"></span>Destino</dt>
+          <dd id="dest-label">sin seleccionar</dd>
+        </dl>
+        <label class="check">
+          <input type="checkbox" id="opt-diagonal" checked>
+          Permitir movimientos diagonales
+        </label>
+        <div class="actions">
+          <button id="btn-route" class="btn btn-primary" type="button" disabled>Calcular ruta</button>
+          <button id="btn-clear" class="btn btn-secondary" type="button">Limpiar</button>
+        </div>
+      </section>
+
+      <section class="card" id="weights-card" hidden>
+        <h2>Pesos del costo</h2>
+        <p class="hint">
+          Ajusta cuánto penaliza A* la pendiente y el índice de radiación MODELADO (0 a 100).
+          El costo total es un ÍNDICE DEL PROYECTO: una puntuación de planificación, no una probabilidad ni una garantía.
+        </p>
+        <div class="weight-row">
+          <label for="slope-weight-number">Peso de la pendiente <span class="weight-default">(por defecto 0,05)</span></label>
+          <div class="weight-inputs">
+            <input type="range" id="slope-weight-range" min="0" max="100" step="0.01" value="0.05" aria-label="Peso de la pendiente, deslizador">
+            <input type="number" id="slope-weight-number" min="0" max="100" step="0.01" value="0.05" inputmode="decimal">
+          </div>
+        </div>
+        <div class="weight-row">
+          <label for="radiation-weight-number">Peso de la radiación MODELADA <span class="weight-default">(por defecto 0)</span></label>
+          <div class="weight-inputs">
+            <input type="range" id="radiation-weight-range" min="0" max="100" step="0.01" value="0" aria-label="Peso de la radiación modelada, deslizador">
+            <input type="number" id="radiation-weight-number" min="0" max="100" step="0.01" value="0" inputmode="decimal">
+          </div>
+        </div>
+        <p id="weights-error" class="field-error" role="alert" hidden></p>
+        <p class="hint formula" id="weights-formula">costo_paso = longitud × (1 + w_pendiente·pendiente + 2·riesgo + w_radiación·radiación_modelada)</p>
+        <button id="btn-weights-reset" class="btn btn-secondary" type="button">Restablecer pesos</button>
+      </section>
+
+      <section class="card shelter-card" id="shelter-card" hidden>
+        <h2>Alerta solar</h2>
+        <p class="hint">
+          Si el clima espacial empeora durante la salida, calcula desde el origen elegido la ruta de menor costo
+          hasta la <strong>zona candidata de espera</strong> más cercana por costo. Usa los mismos pesos del costo.
+        </p>
+        <label class="field-label" for="shelter-max-km">Distancia máxima de la ruta (km, opcional)</label>
+        <input type="number" id="shelter-max-km" class="field-input" min="0" step="0.1" placeholder="sin límite" inputmode="decimal">
+        <p id="shelter-max-error" class="field-error" role="alert" hidden></p>
+        <button id="btn-shelter" class="btn btn-warning" type="button" disabled>Ruta a la zona candidata de espera</button>
+        <p class="edu-warning">
+          Planificación educativa: la zona candidata de espera sale de un criterio del proyecto (poca pendiente y
+          relieve que tapa parte del cielo). No es un lugar garantizado ni una recomendación operacional.
+        </p>
+        <p id="shelter-empty" class="shelter-empty" role="status" hidden></p>
+        <div id="shelter-result" hidden>
+          <dl class="results">
+            <dt>Distancia hasta la zona</dt><dd id="shelter-distance">—</dd>
+            <dt>Pendiente de la zona</dt><dd id="shelter-dest-slope">—</dd>
+            <dt>Cielo visible en la zona</dt><dd id="shelter-dest-sky">—</dd>
+            <dt>Celdas que cumplen el criterio</dt><dd id="shelter-candidates">—</dd>
+          </dl>
+          <p class="shelter-criterion">
+            <span class="prov-badge prov-index" id="shelter-label">ÍNDICE DEL PROYECTO</span>
+            Criterio: <span id="shelter-criterion"></span>
+          </p>
+          <p class="hint" id="shelter-role"></p>
+          <p class="hint" id="shelter-note"></p>
+        </div>
+      </section>
+
+      <section class="card" id="results-card" hidden>
+        <h2>2. Resultado de la ruta</h2>
+        <dl class="results">
+          <dt>Distancia</dt><dd id="res-distance">—</dd>
+          <dt>Costo total <span class="prov-badge" data-prov="total_cost" hidden></span></dt><dd id="res-cost">—</dd>
+          <dt>Pasos</dt><dd id="res-steps">—</dd>
+          <dt>Pendiente máxima</dt><dd id="res-slope">—</dd>
+          <dt id="risk-mean-label">Indicador medio de riesgo</dt><dd id="res-risk-mean">—</dd>
+          <dt id="risk-max-label">Indicador máximo de riesgo</dt><dd id="res-risk-max">—</dd>
+          <dt>Nodos expandidos por A*</dt><dd id="res-nodes">—</dd>
+          <dt id="res-weights-label" hidden>Pesos aplicados</dt><dd id="res-weights" hidden>—</dd>
+        </dl>
+        <p id="res-risk-text" class="risk-text"></p>
+      </section>
+
+      <section class="card">
+        <h2>Mapa y capas</h2>
+        <label class="check" id="global-mola-label" hidden><input type="checkbox" data-layer="global-elevation" checked> Relieve MOLA global (0,5°)</label>
+        <label class="check" id="local-mola-label" hidden><input type="checkbox" data-layer="elevation" checked> <span id="elevation-layer-label">Detalle MOLA (zona de ruta)</span> <span class="prov-badge" data-prov="elevation_m" hidden></span></label>
+        <label class="check" id="viking-layer-label" hidden><input type="checkbox" id="viking-layer-toggle"> Imagen orbital Viking (opcional, requiere Internet)</label>
+        <label class="check" id="synthetic-elevation-label"><input type="checkbox" data-layer="elevation" checked> <span id="synthetic-elevation-text">Elevación (simulada)</span></label>
+        <label class="check"><input type="checkbox" data-layer="slope"> <span id="slope-layer-label">Pendiente (simulada)</span> <span class="prov-badge" data-prov="slope_deg" hidden></span></label>
+        <label class="check" id="risk-layer-label"><input type="checkbox" id="risk-layer-toggle" data-layer="risk" checked> <span id="risk-layer-text">Indicador de riesgo</span> <span class="prov-badge" data-prov="risk" hidden></span></label>
+        <label class="check" id="shielding-layer-label" hidden><input type="checkbox" id="shielding-layer-toggle" data-layer="shielding"> <span>Índice de apantallamiento</span> <span class="prov-badge" data-prov="radiation_modeled" hidden></span></label>
+        <p class="hint" id="shielding-layer-note" hidden>
+          Calculado en la interfaz como 1 − radiation_modeled: más intenso = más cielo tapado por el relieve.
+          Es un índice relativo MODELADO, no una dosis ni una medición por celda.
+        </p>
+        <label class="check" id="place-names-label" hidden>
+          <input type="checkbox" id="place-names-toggle">
+          Nombres de lugares (aparecen al acercar)
+        </label>
+        <label class="check"><input type="checkbox" data-layer="blocked" checked> Celdas bloqueadas <span class="prov-badge" data-prov="blocked" hidden></span></label>
+        <label class="check"><input type="checkbox" data-layer="grid"> Cuadrícula (actívala al acercar)</label>
+        <label class="check"><input type="checkbox" data-layer="route" checked> Ruta calculada</label>
+        <p class="hint" id="prov-note" hidden>
+          Las etiquetas indican la procedencia que declara la API para cada capa
+          (MEDIDO, DERIVADO, MODELADO, ÍNDICE DEL PROYECTO). Pasa el cursor o enfoca una etiqueta para ver su fuente.
+        </p>
+        <p class="hint" id="place-names-note" hidden>
+          Se priorizan los accidentes grandes y las etiquetas evitan solaparse.
+          Los nombres describen accidentes del terreno, no peligros. MOLA ofrece un proxy topográfico basado solo en pendiente, no una capa de peligros validada.
+        </p>
+      </section>
+
+      <details class="card" id="rover-layers-card">
+        <summary>Capas de rovers e instrumentos</summary>
+        <div class="details-content">
+        <p class="hint">Activa las trayectorias y los puntos de exploración sobre el relieve global. Selecciona una misión para centrar el mapa en su zona de trabajo.</p>
+        <div id="rover-layer-list" class="rover-layer-list" aria-label="Capas de misiones rover">
+          <label class="check rover-layer"><input type="checkbox" data-mission-layer="perseverance"> Perseverance · Jezero</label>
+          <label class="check rover-layer"><input type="checkbox" data-mission-layer="curiosity"> Curiosity · Gale</label>
+          <label class="check rover-layer"><input type="checkbox" data-mission-layer="opportunity"> Opportunity · Meridiani</label>
+          <label class="check rover-layer"><input type="checkbox" data-mission-layer="spirit"> Spirit · Gusev</label>
+          <label class="check rover-layer"><input type="checkbox" data-mission-layer="zhurong"> Zhurong · Utopia</label>
+          <label class="check rover-layer"><input type="checkbox" data-instrument-layer="hirise"> HiRISE · MRO</label>
+          <label class="check rover-layer"><input type="checkbox" data-instrument-layer="themis"> THEMIS · Mars Odyssey</label>
+          <label class="check rover-layer"><input type="checkbox" data-instrument-layer="ctx"> CTX · MRO</label>
+          <label class="check rover-layer"><input type="checkbox" data-instrument-layer="hrsc"> HRSC · Mars Express</label>
+        </div>
+        <button id="btn-next-exploration-point" class="btn btn-secondary mission-load" type="button">Ir al siguiente punto de exploración</button>
+        <p id="next-point-status" class="hint" role="status" aria-live="polite">Activa una o más capas para recorrer sus puntos geográficos en orden.</p>
+        <p class="mission-sources">Las trayectorias y puntos son referencias geográficas para exploración visual, no telemetría de navegación certificada. Se incluyen zonas de aterrizaje y varios lugares de interés por misión.</p>
+        </div>
+      </details>
+
+      <details class="card" id="missions-card">
+        <summary>Imágenes de misiones NASA</summary>
+        <div class="details-content">
+        <p class="hint">Consulta imágenes del catálogo NASA. Al elegir un rover o instrumento también se activan sus puntos geográficos de referencia en el mapa grande.</p>
+        <label class="mission-label" for="mission-select">Seleccionar misión o instrumento</label>
+        <select id="mission-select" class="mission-select">
+          <option value="perseverance">Perseverance — cráter Jezero</option>
+          <option value="curiosity">Curiosity — cráter Gale</option>
+          <option value="opportunity">Opportunity — Meridiani Planum</option>
+          <option value="spirit">Spirit — cráter Gusev</option>
+          <option value="zhurong">Zhurong — Utopia Planitia</option>
+          <option value="hirise">HiRISE — Mars Reconnaissance Orbiter</option>
+          <option value="themis">THEMIS — Mars Odyssey</option>
+          <option value="ctx">CTX — Mars Reconnaissance Orbiter</option>
+          <option value="hrsc">HRSC — Mars Express</option>
+        </select>
+        <button id="btn-load-mission" class="btn btn-secondary mission-load" type="button">Cargar imágenes NASA</button>
+        <p id="mission-status" class="hint" role="status" aria-live="polite">Selecciona una misión para consultar el catálogo de NASA.</p>
+        <div id="mission-gallery" class="mission-gallery" aria-live="polite"></div>
+        <p class="mission-sources">
+          Catálogos oficiales: <a href="https://images.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA Image and Video Library</a> ·
+          <a href="https://themis.mars.asu.edu/maps" target="_blank" rel="noopener noreferrer">THEMIS / ASU</a> ·
+          <a href="https://trek.nasa.gov/mars/" target="_blank" rel="noopener noreferrer">NASA Mars Trek</a>
+        </p>
+        </div>
+      </details>
+
+      <details class="card legend" id="legend">
+        <summary>Leyenda y lectura del mapa</summary>
+        <div class="details-content">
+        <ul>
+          <li><span class="swatch swatch-elev"></span><span id="elevation-legend">Elevación: claro = baja, oscuro = alta</span></li>
+          <li><span class="swatch swatch-slope"></span><span id="slope-legend">Pendiente: más rojo = más inclinada</span></li>
+          <li><span class="swatch swatch-risk"></span><span id="risk-legend">Indicador derivado de la fuente activa</span></li>
+          <li><span class="swatch swatch-blocked"></span>Celda excluida de rutas por el umbral configurado</li>
+          <li id="shielding-legend-item" hidden><span class="swatch swatch-shielding"></span><span id="shielding-legend"></span></li>
+        </ul>
+        </div>
+      </details>
+
+      <p class="footer-note" id="disclaimer"></p>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="map" aria-label="Mapa interactivo de Marte"></div>
+      <div id="map-view-controls" class="map-view-controls" hidden>
+        <button id="btn-mars-global" class="map-view-button" type="button">Marte completo</button>
+        <button id="btn-mola-region" class="map-view-button" type="button">Ir a zona MOLA</button>
+      </div>
+      <div id="cell-info" class="cell-info" aria-live="polite">Haz clic o toca una celda para consultar su elevación.</div>
+      <div id="map-attribution" class="map-attribution" hidden>
+        Relieve global: MOLA MEGDR · <a href="https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg016/" target="_blank" rel="noopener noreferrer">NASA PDS</a>
+      </div>
+    </main>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="js/config.js?v=4"></script>
+  <script src="js/api.js?v=5"></script>
+  <script src="js/map.js?v=14"></script>
+  <script src="js/app.js?v=15"></script>
+  <script src="js/missions.js?v=3"></script>
+</body>
+</html>
