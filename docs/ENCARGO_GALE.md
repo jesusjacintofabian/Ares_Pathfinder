@@ -30,8 +30,10 @@ combined are requested. Priority: astronaut safety.
   Curiosity landing: 4.59°S, 137.44°E. Gale: 5.4°S, 137.8°E. The *boxwork* coordinates **are not verified**.
 - **Option A** for soft terrain: Mars Trek is used as **visual context**; the A* cost comes from numerical
   data. The soft-terrain indicator enters with weight 0 by default.
-- **Challenge resources used (3 of 5):** Mars Trek (JPL), USGS geologic map and Curiosity's proposed path.
-  Not used: NASA Worldview (it is about Earth) or the Perseverance images (Jezero, not Gale).
+- **Challenge resources (initial plan: 3 of 5):** Mars Trek (JPL), USGS geologic map and Curiosity's proposed path.
+  **Final status:** only Mars Trek (Viking orbital layer) was integrated. The USGS geologic map and Curiosity's path
+  were planned but **not implemented** (see "Phase status").
+  Not used: NASA Worldview (it is about Earth) or the Perseverance images as Gale data (Jezero, not Gale).
 
 ### Mandatory labels per layer (visible in the interface and in the API)
 | Layer | Label | Origin | Enters the cost? |
@@ -65,6 +67,19 @@ All weights ≥ 0 (so the A* heuristic remains admissible). Document the default
 | **F7** | Tests, integration (`tests/integration_check.py`) and update of the technical guide | Everything documented, nothing claimed without running it |
 
 Start only with **F1** and stop for review.
+
+### Phase status (updated at project close)
+> This file is the original brief. This note reflects what actually ended up in the repository.
+
+| Phase | Status |
+|---|---|
+| F1 | Done: Gale MOLA+HRSC DEM at 600 m |
+| F2 | **Partial:** Mars Trek Viking layer (optional, requires Internet). The THEMIS mosaic was **not** integrated as a layer |
+| F3 | Done: MODELED radiation (`sky_view_factor`) |
+| F4 | **Not implemented:** USGS geologic units layer |
+| F5 | **Not implemented:** georeferenced Curiosity route |
+| F6 | Done: adjustable weights, solar alert (`/routes/shelter`) and `provenance` |
+| F7 | Done: tests and integration |
 
 ## 5. Verified sources
 - **200 m MOLA+HRSC DEM (global, GeoTIFF ≈ 11 GB):**
