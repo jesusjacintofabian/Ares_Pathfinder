@@ -106,7 +106,7 @@
 
         var scale = Math.pow(2, coords.z);
         var west = coords.x * tileSize / scale;
-        var east = (coords.x + 1) * tileSize / scale;
+        var east = Math.min((coords.x + 1) * tileSize / scale, 360);
         var north = -coords.y * tileSize / scale;
         var south = -(coords.y + 1) * tileSize / scale;
         var validSouth = Math.max(south, -90);
