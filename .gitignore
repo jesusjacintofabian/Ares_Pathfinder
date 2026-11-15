@@ -1,0 +1,30 @@
+# Entornos y cachés de Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Archivos de bloqueo de LibreOffice (p. ej., al abrir el .docx de docs/)
+.~lock.*
+
+# Credenciales y secretos
+.env
+.env.*
+*.pem
+*.key
+
+# Datos crudos: archivos grandes que se descargan, nunca se versionan.
+# Se conservan el marcador del directorio y los labels/headers MOLA pequeños.
+data/raw/**
+!data/raw/
+!data/raw/.gitkeep
+!data/raw/mola/
+!data/raw/mola/*.xml
+!data/raw/mola/*.hdr
+
+# Dependencias de desarrollo del frontend (pruebas jsdom)
+node_modules/
+
+# Configuración local de Claude Code (no se comparte)
+.claude/
