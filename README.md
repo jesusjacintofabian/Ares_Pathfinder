@@ -1,7 +1,7 @@
 **Ares Pathfinder 🚀**  
 Planning map for a surface walk (EVA) on Mars, developed for the **NASA Space Apps Challenge 2026**: *Interplanetary Survival Guide: Martian Map*.  
 ***Important:*** * this is a NASA Space Apps Challenge participants' project. It is not an official NASA product nor an operational safety recommendation: it is an educational and planning prototype.*  
-*Note: * *This README was translated from Spanish to English.*  
+*Note: this README was translated from Spanish to English. *  
 **🎯 Problem and solution**  
 **Problem.** An astronaut on a walk across the Martian surface must reach a valuable scientific target and return to the habitat without being exposed to slopes their suit does not allow or to avoidable exposure, and needs to be able to change plans if space weather worsens during the outing.  
 **Study region.** Gale Crater, northwest flank of Mount Sharp (Aeolis Mons), where Curiosity has studied *boxwork* formations. The window used (≈ 47 × 41 km) is provisional and **does not mark the location of *****boxwork***** formations**: their coordinates are not verified in this repository.  
