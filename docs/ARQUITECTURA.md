@@ -1,147 +1,147 @@
-# Arquitectura del laboratorio
+# Laboratory architecture
 
 ```text
 data/raw/mola/
   .img + .xml + .hdr ──▶ data/mola_reader.py (mmap)
-                             ├── data/process_mola.py ─────▶ JSON de detalle
-                             ├── data/process_mola_global.py ▶ JSON.gz global (1°)
-                             └── data/render_mola_preview.py ▶ PNG global (0,5°)
+                             ├── data/process_mola.py ─────▶ detail JSON
+                             ├── data/process_mola_global.py ▶ global JSON.gz (1°)
+                             └── data/render_mola_preview.py ▶ global PNG (0.5°)
                                       │                 │              │
                                       └─────────────────┴──────────────┘
                                                         ▼
                                                    FastAPI
-                               /api/v1/map, /routes y /routes/shelter
+                               /api/v1/map, /routes and /routes/shelter
                                                         │
                                                         ▼
-                                                Frontend Leaflet
-                              ├── relieve MOLA global local (0,5°)
-                              ├── malla global de rutas (1°) + bloqueos
-                              ├── Viking opcional (NASA Mars Trek)
-                              ├── nomenclatura visible (NASA/JPL)
-                              ├── detalle MOLA local + ruta A* (capas de celdas en canvas)
-                              ├── etiquetas de procedencia por capa (provenance)
-                              └── Gale: pesos, índice de apantallamiento y alerta solar
+                                                Leaflet frontend
+                              ├── local global MOLA relief (0.5°)
+                              ├── global route mesh (1°) + blocked cells
+                              ├── optional Viking (NASA Mars Trek)
+                              ├── visible nomenclature (NASA/JPL)
+                              ├── local MOLA detail + A* route (cell layers on canvas)
+                              ├── per-layer provenance labels (provenance)
+                              └── Gale: weights, shielding index and solar alert
 ```
 
-## Flujo topográfico MOLA
+## MOLA topographic flow
 
-1. Obtén el producto `megt90n000eb` y conserva sin modificar el raster original,
-   el label PDS4 `.xml` y el header ENVI `.hdr` bajo `data/raw/mola/`.
-2. `data/mola_reader.py` lee las dimensiones y el tipo binario del label PDS4,
-   valida el raster y usa `numpy.memmap` para evitar cargar el globo completo.
-   El procesador local lee el recorte pedido; el global promedia elevaciones a
-   1° y conserva como pendiente de cada celda el máximo de las pendientes MOLA
-   nativas incluidas en ella. La periodicidad longitudinal se considera al
-   derivar pendientes en la malla global.
-3. `data/process_mola.py` convierte el recorte en una cuadrícula JSON pequeña
-   en `data/processed/`. Celdas sin dato se marcan inválidas y bloqueadas.
-   `data/render_mola_preview.py` genera el PNG equirectangular global de
-   `720 × 360` píxeles (0,5° por píxel). `data/process_mola_global.py` genera
-   la malla de rutas comprimida y su máscara PNG de celdas bloqueadas.
-4. El backend carga las dos cuadrículas MOLA cuando se configura
-   `MARS_DATA_SOURCE=mola`. A* usa el mismo `Grid`/`GridCell`; no se modifica
-   el algoritmo ni se elimina el dataset sintético.
-5. `/api/v1/map` expone el recorte local y la malla global compacta.
-   `/api/v1/routes` acepta índices locales heredados o coordenadas geográficas:
-   usa detalle si ambos extremos están dentro de la región activa; si no,
-   calcula sobre la malla global. Las rutas geográficas incluyen centros de
-   celdas para dibujarse directamente en Leaflet.
+1. Obtain the `megt90n000eb` product and keep the original raster, the PDS4
+   `.xml` label and the ENVI `.hdr` header unmodified under `data/raw/mola/`.
+2. `data/mola_reader.py` reads the dimensions and binary type from the PDS4 label,
+   validates the raster and uses `numpy.memmap` to avoid loading the whole globe.
+   The local processor reads the requested crop; the global one averages elevations to
+   1° and keeps, as each cell's slope, the maximum of the native MOLA slopes
+   it contains. Longitudinal periodicity is taken into account when
+   deriving slopes on the global mesh.
+3. `data/process_mola.py` converts the crop into a small JSON grid
+   in `data/processed/`. Cells without data are marked invalid and blocked.
+   `data/render_mola_preview.py` generates the global equirectangular PNG of
+   `720 × 360` pixels (0.5° per pixel). `data/process_mola_global.py` generates
+   the compressed route mesh and its PNG mask of blocked cells.
+4. The backend loads both MOLA grids when
+   `MARS_DATA_SOURCE=mola` is configured. A* uses the same `Grid`/`GridCell`; the
+   algorithm is not modified and the synthetic dataset is not removed.
+5. `/api/v1/map` exposes the local crop and the compact global mesh.
+   `/api/v1/routes` accepts legacy local indices or geographic coordinates:
+   it uses the detail if both endpoints are inside the active region; otherwise it
+   computes on the global mesh. Geographic routes include cell centers so they
+   can be drawn directly in Leaflet.
 
-## Selección de la fuente
+## Source selection
 
-- Sin configuración, `MARS_DATA_SOURCE=synthetic` es el valor predeterminado.
-- Para MOLA basta `MARS_DATA_SOURCE=mola`: sin más configuración se usa la región
-  **Valles Marineris** (`data/processed/mola_valles_marineris.json`, 32 × 32 celdas, 96 bloqueadas
-  con umbral de 20°). Para otra región, procésala y apunta `MARS_MOLA_GRID_FILE` al JSON
-  dentro de `data/processed/`. La muestra ecuatorial plana (`mola_region.json`) se conserva como control.
-- Las rutas fuera de la región activa usan
-  `data/processed/mola_global_1deg.json.gz`, de 180 × 360 celdas. La API la carga
-  al iniciar el dataset MOLA; por lo tanto ese archivo versionado es necesario
-  para la operación MOLA, aunque no se incluya el raster original.
-- El recorte admite hasta 250.000 celdas; se prohíbe así exponer la matriz
-  global nativa de 16.588.800 celdas a la respuesta JSON y al planificador.
-  La malla de 1° tiene 64.800 entradas compactas.
-- Los requests de ruta admiten el formato legado de índices y coordenadas
-  geográficas MOLA. El cliente no necesita enviar selector de fuente: mapa y
-  rutas usan la configuración del backend.
+- With no configuration, `MARS_DATA_SOURCE=synthetic` is the default value.
+- For MOLA, `MARS_DATA_SOURCE=mola` is enough: with no further configuration the
+  **Valles Marineris** region is used (`data/processed/mola_valles_marineris.json`, 32 × 32 cells, 96 blocked
+  with a 20° threshold). For another region, process it and point `MARS_MOLA_GRID_FILE` to the JSON
+  inside `data/processed/`. The flat equatorial sample (`mola_region.json`) is kept as a control.
+- Routes outside the active region use
+  `data/processed/mola_global_1deg.json.gz`, with 180 × 360 cells. The API loads it
+  when starting the MOLA dataset; therefore that versioned file is necessary
+  for MOLA operation, even if the original raster is not included.
+- The crop allows up to 250,000 cells; this prevents exposing the native
+  global matrix of 16,588,800 cells to the JSON response and the planner.
+  The 1° mesh has 64,800 compact entries.
+- Route requests accept the legacy index format and MOLA
+  geographic coordinates. The client does not need to send a source selector: map and
+  routes use the backend configuration.
 
 ## Frontend
 
-- `js/api.js` solo comunica. `postRoute` añade `slope_weight` y `radiation_weight` únicamente
-  si se le pasan; `postShelter` llama a `/routes/shelter`. El backend calcula todas las rutas.
-- `js/app.js` muestra las etiquetas de `provenance` (fuente y papel en el costo en el título).
-  Si `/map` trae `radiation_available`, también muestra:
-  - la tarjeta de pesos;
-  - la capa del índice de apantallamiento;
-  - la alerta solar.
+- `js/api.js` only communicates. `postRoute` adds `slope_weight` and `radiation_weight` only
+  if they are passed; `postShelter` calls `/routes/shelter`. The backend computes all routes.
+- `js/app.js` shows the `provenance` labels (source and role in the cost, in the title).
+  If `/map` brings `radiation_available`, it also shows:
+  - the weights card;
+  - the shielding index layer;
+  - the solar alert.
 
-  En las demás fuentes la interfaz y las solicitudes no cambian. `NO_SHELTER` se presenta
-  como resultado del modelo, no como error.
-- `js/map.js` dibuja las capas de celdas con `L.canvas()`, con un renderizador por pane:
-  elevación, pendiente, riesgo, apantallamiento, cuadrícula y la capa invisible de clics.
-  La ruta, los pines, las celdas bloqueadas y las misiones siguen en SVG/DOM. Un `<canvas>`
-  capta el puntero en toda su superficie, así que la capa de clics (pane 452) queda por
-  debajo de topónimos, ruta, pines y misiones. Donde no hay un marcador encima, el canvas
-  encuentra la celda por geometría o pasa el clic al mapa (malla global).
-- El índice de apantallamiento es `1 − radiation_modeled`, calculado en la interfaz solo para
-  pintarlo. Su escala es relativa al rango real de la región.
-- Con `?perf=1`, la interfaz mide la construcción del mapa (`window.__marsPerf`).
+  For the other sources the interface and the requests do not change. `NO_SHELTER` is presented
+  as a model result, not as an error.
+- `js/map.js` draws the cell layers with `L.canvas()`, with one renderer per pane:
+  elevation, slope, risk, shielding, grid and the invisible click layer.
+  The route, pins, blocked cells and missions remain in SVG/DOM. A `<canvas>`
+  captures the pointer over its whole surface, so the click layer (pane 452) sits
+  below place names, route, pins and missions. Where there is no marker on top, the canvas
+  finds the cell by geometry or passes the click to the map (global mesh).
+- The shielding index is `1 − radiation_modeled`, computed in the interface only to
+  paint it. Its scale is relative to the actual range of the region.
+- With `?perf=1`, the interface measures the map construction (`window.__marsPerf`).
 
-## Límites científicos y geométricos
+## Scientific and geometric limits
 
-- MOLA aporta topografía relativa al areoide, no una capa de peligros. El
-  `risk` de MOLA es un proxy topográfico educativo: `min(slope_deg / 20, 1)`.
-  Se publica en las celdas globales y de detalle y tiene peso 2.0 en A*; no es
-  una probabilidad ni estima peligros geológicos o seguridad. Las celdas MOLA
-  inválidas están bloqueadas y su proxy no está disponible.
-- El umbral de pendiente de 30° por defecto es una regla demostrativa
-  configurable, no un límite de tránsito validado para una misión.
-- El cálculo de pendiente usa el radio marciano declarado por el producto y
-  corrige la escala este-oeste por latitud. A* conserva el `cell_size_m`
-  escalar original; la distancia reportada usa el tamaño nominal en el ecuador
-  y es aproximada fuera de él.
-- En modo MOLA, Leaflet representa latitud/longitud en una cuadrícula
-  equirectangular, con longitudes positivas este de 0° a 360°. La vista
-  planetaria es una imagen derivada del producto MOLA, muestreada a 0,5° por
-  píxel; una malla independiente de 1° permite seleccionar y calcular rutas
-  aproximadas en todo el planeta. El botón «Marte completo» muestra el globo
-  y «Ir a zona MOLA» acerca al recorte de mayor detalle.
-- El mapa base Viking MDIM 2.1 tiene resolución nominal de 232 m/píxel en el
-  ecuador; no equivale a imágenes orbitales actuales de alta resolución.
-  Se carga bajo demanda y requiere Internet. El modo sintético conserva su
-  cuadrícula local.
-- Los topónimos se consultan por extensión visible desde `combinedNom` de
-  NASA/JPL Mars Trek. El filtro por diámetro cambia progresivamente con el zoom
-  (1.000, 500, 200 y 50 km; en zoom de detalle se admiten todos); para cada vista
-  se priorizan los accidentes grandes y las etiquetas que no se solapan. Estos
-  datos son nomenclatura, no constituyen una capa de peligros.
-- Una ruta es el óptimo del modelo de costo configurado; no garantiza
-  seguridad, comunicación, energía ni transitabilidad de rover/persona.
+- MOLA provides topography relative to the areoid, not a hazard layer. MOLA's
+  `risk` is an educational topographic proxy: `min(slope_deg / 20, 1)`.
+  It is published in the global and detail cells and has weight 2.0 in A*; it is not
+  a probability nor does it estimate geological hazards or safety. Invalid
+  MOLA cells are blocked and their proxy is not available.
+- The default 30° slope threshold is a configurable demonstration
+  rule, not a validated traversal limit for a mission.
+- The slope computation uses the Martian radius declared by the product and
+  corrects the east-west scale by latitude. A* keeps the original scalar
+  `cell_size_m`; the reported distance uses the nominal size at the equator
+  and is approximate away from it.
+- In MOLA mode, Leaflet represents latitude/longitude on an equirectangular
+  grid, with east-positive longitudes from 0° to 360°. The planetary
+  view is an image derived from the MOLA product, sampled at 0.5° per
+  pixel; an independent 1° mesh allows selecting and computing approximate
+  routes across the whole planet. The «Marte completo» ("Whole Mars") button shows the globe
+  and «Ir a zona MOLA» ("Go to MOLA zone") zooms to the highest-detail crop.
+- The Viking MDIM 2.1 base map has a nominal resolution of 232 m/pixel at the
+  equator; it is not equivalent to current high-resolution orbital imagery.
+  It is loaded on demand and requires Internet. Synthetic mode keeps its local
+  grid.
+- Place names are queried by visible extent from `combinedNom` of
+  NASA/JPL Mars Trek. The diameter filter changes progressively with zoom
+  (1,000, 500, 200 and 50 km; at detail zoom all are admitted); for each view,
+  large features and non-overlapping labels are prioritized. These
+  data are nomenclature; they are not a hazard layer.
+- A route is the optimum of the configured cost model; it does not guarantee
+  safety, communication, energy or rover/person traversability.
 
-## Pruebas y contratos
+## Tests and contracts
 
-Las pruebas de lector construyen rasters PDS4/ENVI pequeños en temporales. Las
-pruebas API verifican el formato legado, rutas geográficas globales y selección
-del detalle en una región activa. Además, `test_mola_default_region.py` comprueba
-la región predeterminada (relieve, bloqueos y rutas que los esquivan).
-`tests/integration_check.py` valida contra servidores reales el modo sintético, MOLA
-(`--mola`) y Gale (`--gale`: procedencia, capa de radiación y `/routes/shelter`).
+The reader tests build small PDS4/ENVI rasters in temporary files. The
+API tests verify the legacy format, global geographic routes and detail
+selection in an active region. In addition, `test_mola_default_region.py` checks
+the default region (relief, blocked cells and routes that avoid them).
+`tests/integration_check.py` validates, against real servers, synthetic mode, MOLA
+(`--mola`) and Gale (`--gale`: provenance, radiation layer and `/routes/shelter`).
 
-La interfaz se prueba con jsdom (`cd frontend && npm test`). Las pruebas cargan
-`index.html`, Leaflet y los scripts reales con un `fetch` falso y un contexto 2D falso:
-- cuerpos de las solicitudes;
-- etiquetas, pesos, capas y casillas;
-- alerta solar y vocabulario;
-- clics y hover por coordenadas sobre el canvas.
+The interface is tested with jsdom (`cd frontend && npm test`). The tests load
+`index.html`, Leaflet and the real scripts with a fake `fetch` and a fake 2D context:
+- request bodies;
+- labels, weights, layers and checkboxes;
+- solar alert and vocabulary;
+- clicks and hover by coordinates over the canvas.
 
-jsdom no pinta; el pintado real se revisa con la lista de comprobación manual del README.
+jsdom does not paint; real painting is checked with the manual checklist in the README.
 
-- **Datos y API:** `docs/CONTRATO_DE_DATOS.md`
-- **Procedencia:** `docs/FUENTES_DE_DATOS.md`
-- **Documentación automática FastAPI:** `/docs`
+- **Data and API:** `docs/CONTRATO_DE_DATOS.md`
+- **Provenance:** `docs/FUENTES_DE_DATOS.md`
+- **Automatic FastAPI documentation:** `/docs`
 
-## Alineación con el reto
+## Alignment with the challenge
 
-La arquitectura permite combinar gradualmente capas de misiones distintas.
-MOLA es la primera capa topográfica integrada; otras misiones y cualquier
-modelo de riesgo requieren fuentes, metadatos y validación independientes.
+The architecture allows gradually combining layers from different missions.
+MOLA is the first integrated topographic layer; other missions and any
+risk model require independent sources, metadata and validation.

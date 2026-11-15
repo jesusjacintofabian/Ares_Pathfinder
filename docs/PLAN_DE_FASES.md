@@ -1,51 +1,51 @@
-# Plan de fases
+# Phase plan
 
-> Este plan es una **propuesta interna** del proyecto. No es un requisito de NASA.
-> Se puede ajustar. Aquí se conserva el contenido técnico de cada fase; el reparto por
-> carpetas del equipo está en `docs/FLUJO_GIT.md`.
+> This plan is an **internal proposal** of the project. It is not a NASA requirement.
+> It can be adjusted. The technical content of each phase is kept here; the split by
+> team folders is in `docs/FLUJO_GIT.md`.
 
-**Total: 7 fases (0 a 6).** Cada fase termina con una entrega verificable.
+**Total: 7 phases (0 to 6).** Each phase ends with a verifiable deliverable.
 
-| Fase | Nombre | Estado | Entregable verificable |
+| Phase | Name | Status | Verifiable deliverable |
 |------|--------|--------|------------------------|
-| 0 | Preparación | ✅ Hecha | Repositorio clonado, entorno funcionando, primer Pull Request integrado |
-| 1 | Datos GIS | ✅ Hecha | Datos sintéticos reproducibles y topografía MOLA documentada en `docs/FUENTES_DE_DATOS.md` |
-| 2 | Backend base | ✅ Hecha | API con `/health`, `/map` y `/routes`; fuente sintética o MOLA |
-| 3 | Frontend base | ✅ Hecha | Mapa Leaflet con relieve MOLA global colorizado, detalle de región para rutas y capas opcionales |
-| 4 | Ruta y riesgo | ✅ Hecha | A* con costo por pendiente y riesgo simulado o proxy topográfico MOLA; ruta dibujada en el mapa |
-| 5 | Pruebas y documentación | 🔄 En curso | Pytest, pruebas jsdom de la interfaz e integración sintético/MOLA/Gale hechas; falta actualizar la guía técnica (.docx) |
-| 6 | Cierre y lecciones aprendidas | ⏳ Pendiente | Documento `docs/LECCIONES_APRENDIDAS.md` para llegar preparado al reto real |
+| 0 | Preparation | ✅ Done | Repository cloned, environment working, first Pull Request merged |
+| 1 | GIS data | ✅ Done | Reproducible synthetic data and MOLA topography documented in `docs/FUENTES_DE_DATOS.md` |
+| 2 | Base backend | ✅ Done | API with `/health`, `/map` and `/routes`; synthetic or MOLA source |
+| 3 | Base frontend | ✅ Done | Leaflet map with colorized global MOLA relief, region detail for routes and optional layers |
+| 4 | Route and risk | ✅ Done | A* with slope cost and simulated risk or MOLA topographic proxy; route drawn on the map |
+| 5 | Testing and documentation | 🔄 In progress | Pytest, jsdom interface tests and synthetic/MOLA/Gale integration done; the technical guide (.docx) still needs updating |
+| 6 | Wrap-up and lessons learned | ⏳ Pending | Document `docs/LECCIONES_APRENDIDAS.md` to arrive prepared for the real challenge |
 
-## Detalle por fase
+## Detail by phase
 
-### Fase 0: Preparación
-- Repositorio en GitHub, entorno virtual y proyecto base funcionando.
-- Practicar el flujo: commit, push y, para cambios grandes, rama y Pull Request.
+### Phase 0: Preparation
+- Repository on GitHub, virtual environment and base project working.
+- Practice the workflow: commit, push and, for large changes, branch and Pull Request.
 
-### Fase 1: Datos GIS
-- Zona de estudio pequeña. Se usan dos fuentes: una cuadrícula **sintética** (aprendizaje) y un recorte
-  de la topografía real **MOLA** (producto `megt90n000eb`).
-- Fuentes, enlaces oficiales, formato y condiciones de uso en `docs/FUENTES_DE_DATOS.md`.
+### Phase 1: GIS data
+- Small study area. Two sources are used: a **synthetic** grid (learning) and a crop
+  of the real **MOLA** topography (product `megt90n000eb`).
+- Sources, official links, format and terms of use in `docs/FUENTES_DE_DATOS.md`.
 
-### Fase 2: Backend base
-- Estructura FastAPI, modelos Pydantic, errores con formato único y selección de fuente de datos.
-- Pendiente a partir de la elevación (en MOLA se calcula con diferencias finitas).
+### Phase 2: Base backend
+- FastAPI structure, Pydantic models, errors with a single format and data source selection.
+- Slope from elevation (in MOLA it is computed with finite differences).
 
-### Fase 3: Frontend base
-- Mapa Leaflet, selector de capas, marcadores de origen y destino, consumo de los endpoints reales.
+### Phase 3: Base frontend
+- Leaflet map, layer selector, origin and destination markers, consumption of the real endpoints.
 
-### Fase 4: Ruta y riesgo
-- A* sobre una cuadrícula con costo por pendiente y riesgo; heurística admisible verificada contra Dijkstra.
-- El riesgo sintético es simulado; MOLA ofrece un proxy topográfico educativo basado solo en pendiente, no un modelo de peligro real.
+### Phase 4: Route and risk
+- A* on a grid with slope and risk cost; admissible heuristic verified against Dijkstra.
+- Synthetic risk is simulated; MOLA offers an educational topographic proxy based only on slope, not a real hazard model.
 
-### Fase 5: Pruebas y documentación
-- Pruebas del backend, del algoritmo y de MOLA con rasters pequeños temporales.
-- `tests/integration_check.py` contra servidores reales (`--mola` para MOLA, `--gale` para Gale).
-- Pruebas de la interfaz con jsdom (`frontend/tests/`) y lista de comprobación manual en el README.
-- Pendiente: guía técnica extendida (cómo se construyó, F6 y la interfaz de Gale). La versión
-  anterior de la guía se retiró por estar desactualizada.
-- Que cualquier persona nueva pueda levantar el proyecto solo con el README.
+### Phase 5: Testing and documentation
+- Tests of the backend, the algorithm and MOLA with small temporary rasters.
+- `tests/integration_check.py` against real servers (`--mola` for MOLA, `--gale` for Gale).
+- Interface tests with jsdom (`frontend/tests/`) and a manual checklist in the README.
+- Pending: extended technical guide (how it was built, F6 and the Gale interface). The previous
+  version of the guide was withdrawn for being out of date.
+- That any new person can bring the project up using only the README.
 
-### Fase 6: Cierre
-- Retrospectiva: qué funcionó, qué tardó más, qué se haría distinto.
-- Lista de habilidades y patrones aprendidos para el reto real.
+### Phase 6: Wrap-up
+- Retrospective: what worked, what took longer, what would be done differently.
+- List of skills and patterns learned for the real challenge.

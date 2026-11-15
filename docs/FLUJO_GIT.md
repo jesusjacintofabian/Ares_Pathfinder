@@ -1,55 +1,55 @@
-# Flujo de trabajo con Git
+# Git workflow
 
-Dos personas trabajan en carpetas distintas, así que casi no hay conflictos posibles:
+Two people work in different folders, so conflicts are almost impossible:
 
-| Persona | Carpetas que toca |
+| Person | Folders they touch |
 |---|---|
 | Jesús | `backend/`, `data/`, `algorithms/`, `tests/`, `docs/`, `.github/`, `README.md`, `.gitignore` |
-| Aldo | `frontend/` (únicamente) |
+| Aldo | `frontend/` (only) |
 
-Regla de oro: nadie modifica archivos de la carpeta del otro, y **antes de cada `git push` se hace `git pull`**.
-Un solo `main` estable; ramas cortas solo si un cambio es grande o experimental.
+Golden rule: nobody modifies files in the other person's folder, and **before every `git push`, run `git pull`**.
+A single stable `main`; short branches only if a change is large or experimental.
 
-## Ramas
-- `main`: siempre estable (las pruebas pasan). Es la rama que se sube a GitHub.
-- Ramas cortas opcionales para cambios grandes o experimentos, con prefijo por tipo:
-  `feature/<tema>`, `fix/<tema>`, `docs/<tema>`.
+## Branches
+- `main`: always stable (tests pass). It is the branch pushed to GitHub.
+- Optional short branches for large changes or experiments, with a prefix by type:
+  `feature/<topic>`, `fix/<topic>`, `docs/<topic>`.
 
-## Ciclo de trabajo diario
+## Daily work cycle
 ```bash
 cd ~/GitHub/Ares_Pathfinder
 git switch main
-git pull origin main                 # trae lo último de GitHub
-# ... trabajar ...
-cd backend && python -m pytest -q    # las pruebas deben pasar antes de guardar
+git pull origin main                 # fetch the latest from GitHub
+# ... work ...
+cd backend && python -m pytest -q    # tests must pass before saving
 cd ..
-git status                           # qué cambió; no debe aparecer .venv/ ni __pycache__/
-git add <archivos concretos>         # evita 'git add .' sin revisar el status
-git commit -m "feat(backend): descripción corta"
+git status                           # what changed; .venv/ or __pycache__/ must not appear
+git add <specific files>             # avoid 'git add .' without checking status
+git commit -m "feat(backend): short description"
 git push origin main
 ```
 
-## Cambios grandes con rama y Pull Request (recomendado)
+## Large changes with a branch and Pull Request (recommended)
 ```bash
-git switch -c feature/nueva-region-mola
+git switch -c feature/new-mola-region
 # ... commits ...
-git push -u origin feature/nueva-region-mola
-# En GitHub: Compare & pull request -> revisar el diff tú mismo -> Merge pull request
+git push -u origin feature/new-mola-region
+# On GitHub: Compare & pull request -> review the diff yourself -> Merge pull request
 git switch main && git pull origin main
 ```
-Revisar el diff en el Pull Request antes de integrar sirve como autorrevisión.
+Reviewing the diff in the Pull Request before merging serves as a self-review.
 
-## Mensajes de commit
-Formato: `tipo(ámbito): descripción corta`.
-Tipos: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `data`.
-Ámbitos habituales: `backend`, `frontend`, `data`, `algoritmo`, `integración`.
+## Commit messages
+Format: `type(scope): short description`.
+Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `data`.
+Usual scopes: `backend`, `frontend`, `data`, `algoritmo`, `integración`.
 
-## Reglas
-1. Un commit = un cambio con sentido propio (separar código, datos y documentación).
-2. Ejecutar `pytest` antes de cada commit que toque código.
-3. Antes de `git add`, revisar `git status`: no deben aparecer `.venv/`, `__pycache__/`, `.zip`,
-   credenciales ni el raster `data/raw/mola/*.img` (el `.gitignore` los excluye).
-4. No subir contraseñas ni tokens. GitHub no acepta la contraseña de la cuenta en Git:
-   usa un token personal (Settings -> Developer settings -> Personal access tokens).
-5. No usar `git push --force` sobre `main`.
-6. Si algo sale mal antes del commit: `git restore <archivo>` deshace cambios de un archivo.
+## Rules
+1. One commit = one change that makes sense on its own (separate code, data and documentation).
+2. Run `pytest` before every commit that touches code.
+3. Before `git add`, check `git status`: `.venv/`, `__pycache__/`, `.zip` files,
+   credentials or the raster `data/raw/mola/*.img` must not appear (`.gitignore` excludes them).
+4. Do not upload passwords or tokens. GitHub does not accept the account password in Git:
+   use a personal token (Settings -> Developer settings -> Personal access tokens).
+5. Do not use `git push --force` on `main`.
+6. If something goes wrong before the commit: `git restore <file>` undoes changes to a file.

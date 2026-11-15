@@ -1,151 +1,151 @@
-# Contrato de datos e integración — API v1
+# Data and integration contract — API v1
 
-> Esta es la referencia vigente del contrato API v1. Los ejemplos sintéticos
-> históricos siguen describiendo el comportamiento predeterminado; MOLA añade
-> cobertura global y solicitudes geográficas, preservando el formato legado.
+> This is the current reference for the API v1 contract. The historical synthetic
+> examples still describe the default behavior; MOLA adds global
+> coverage and geographic requests, preserving the legacy format.
 
-## Principios
+## Principles
 
-- El **backend** calcula las rutas con A*. El **frontend** gestiona la interacción y dibuja lo que recibe; nunca recalcula ni reconstruye el camino.
-- El modo predeterminado es **sintético** (`is_simulated: true`). El modo MOLA declara `data_source: "mola"` y `is_simulated: false`.
-- Las celdas se representan por índices `{ "row", "col" }`; en solicitudes
-  geográficas MOLA se usa `{ "latitude", "longitude" }`, nunca ambos formatos
-  en una ubicación.
-- Los nombres de campos están en inglés y en `snake_case`; los mensajes de error están en español.
-- Los nombres de campos no cambian entre endpoints (`row`, `col`, `origin`, `destination`, `path`, `summary`).
+- The **backend** computes routes with A*. The **frontend** manages interaction and draws what it receives; it never recomputes or rebuilds the path.
+- The default mode is **synthetic** (`is_simulated: true`). MOLA mode declares `data_source: "mola"` and `is_simulated: false`.
+- Cells are represented by indices `{ "row", "col" }`; in MOLA geographic requests
+  `{ "latitude", "longitude" }` is used, never both formats
+  in one location.
+- Field names are in English and in `snake_case`; error messages are in Spanish.
+- Field names do not change between endpoints (`row`, `col`, `origin`, `destination`, `path`, `summary`).
 
-## Convenciones generales
+## General conventions
 
-| Elemento | Valor |
+| Element | Value |
 |---|---|
-| Base URL (desarrollo) | `http://127.0.0.1:8000` |
-| Prefijo de versión | `/api/v1` |
-| Formato | JSON, codificación UTF-8, cabecera `Content-Type: application/json` en las solicitudes POST |
-| Compresión | El backend comprime respuestas de más de 1 KB con gzip cuando el cliente lo anuncia; navegadores y clientes HTTP habituales la descomprimen automáticamente |
-| Origen del frontend (CORS) | `http://127.0.0.1:5500` y `http://localhost:5500` (configurable en el backend con la variable `MARS_ALLOWED_ORIGINS`) |
-| Métodos CORS permitidos | `GET`, `POST`, `OPTIONS` |
-| Autenticación | Ninguna (laboratorio local) |
-| Documentación automática | `http://127.0.0.1:8000/docs` (Swagger UI de FastAPI) |
-| Selección de datos | `MARS_DATA_SOURCE=synthetic` (predeterminado) o `mola` |
-| Cuadrícula MOLA de detalle | `MARS_MOLA_GRID_FILE` (opcional), JSON de región procesada en `data/processed/`; por defecto `mola_valles_marineris.json` |
-| Región MOLA de detalle por nombre | `MARS_MOLA_REGION` (opcional): `valles_marineris` (predeterminada), `ecuatorial` o `gale` (DEM MOLA+HRSC agregado a 600 m). `MARS_MOLA_GRID_FILE` tiene prioridad; un nombre desconocido produce `503 DATASET_UNAVAILABLE` |
-| Cuadrícula MOLA global | `data/processed/mola_global_1deg.json.gz`, necesaria al activar MOLA |
+| Base URL (development) | `http://127.0.0.1:8000` |
+| Version prefix | `/api/v1` |
+| Format | JSON, UTF-8 encoding, `Content-Type: application/json` header on POST requests |
+| Compression | The backend gzip-compresses responses larger than 1 KB when the client advertises it; browsers and common HTTP clients decompress it automatically |
+| Frontend origin (CORS) | `http://127.0.0.1:5500` and `http://localhost:5500` (configurable in the backend with the variable `MARS_ALLOWED_ORIGINS`) |
+| Allowed CORS methods | `GET`, `POST`, `OPTIONS` |
+| Authentication | None (local laboratory) |
+| Automatic documentation | `http://127.0.0.1:8000/docs` (FastAPI Swagger UI) |
+| Data selection | `MARS_DATA_SOURCE=synthetic` (default) or `mola` |
+| MOLA detail grid | `MARS_MOLA_GRID_FILE` (optional), processed region JSON in `data/processed/`; by default `mola_valles_marineris.json` |
+| MOLA detail region by name | `MARS_MOLA_REGION` (optional): `valles_marineris` (default), `ecuatorial` or `gale` (MOLA+HRSC DEM aggregated to 600 m). `MARS_MOLA_GRID_FILE` takes priority; an unknown name produces `503 DATASET_UNAVAILABLE` |
+| Global MOLA grid | `data/processed/mola_global_1deg.json.gz`, required when activating MOLA |
 
 ## Endpoints
 
-| Método | URL | Función | Respuestas |
+| Method | URL | Function | Responses |
 |---|---|---|---|
-| GET | `/api/v1/health` | Indica que la API funciona | 200 |
-| GET | `/api/v1/map` | Metadatos de la zona, dimensiones y celdas | 200, 503 |
-| POST | `/api/v1/routes` | Calcula la ruta entre un origen y un destino | 200, 400, 404, 422, 503 |
-| POST | `/api/v1/routes/shelter` | Modo «alerta solar»: ruta desde un origen a la zona candidata de espera más cercana por costo (solo regiones con `sky_view_factor`) | 200, 400, 404, 422, 503 |
+| GET | `/api/v1/health` | Indicates that the API works | 200 |
+| GET | `/api/v1/map` | Metadata of the zone, dimensions and cells | 200, 503 |
+| POST | `/api/v1/routes` | Computes the route between an origin and a destination | 200, 400, 404, 422, 503 |
+| POST | `/api/v1/routes/shelter` | "Solar alert" mode: route from an origin to the nearest candidate waiting zone by cost (only regions with `sky_view_factor`) | 200, 400, 404, 422, 503 |
 
-La fuente es una configuración del backend compartida por mapa y rutas. Se
-admiten solicitudes legadas por índices y solicitudes geográficas MOLA. Un
-error de configuración/archivo de datos devuelve `503 DATASET_UNAVAILABLE`.
+The source is a backend setting shared by map and routes. Legacy index requests and MOLA
+geographic requests are supported. A configuration/data file
+error returns `503 DATASET_UNAVAILABLE`.
 
-## Coordenadas de la cuadrícula
+## Grid coordinates
 
-| Aspecto | Definición |
+| Aspect | Definition |
 |---|---|
-| Representación | `{ "row": 2, "col": 3 }` (dos enteros) |
-| Base de índices | 0. La primera fila es `row = 0` y la primera columna es `col = 0` |
-| Sentido de `row` | Crece hacia abajo (la fila 0 es el borde superior del mapa) |
-| Sentido de `col` | Crece hacia la derecha (la columna 0 es el borde izquierdo) |
-| Zona de prueba | 10 filas × 14 columnas: `row` de 0 a 9, `col` de 0 a 13 |
-| Tamaño de celda | Sintético: 100 m × 100 m simulados. MOLA: escala nominal de la proyección en el ecuador marciano |
-| Latitud/longitud | Coordenadas MOLA planetocéntricas, longitud positiva este (0–360°). Se aceptan en `POST /routes`; el mapa incluye centros y región |
+| Representation | `{ "row": 2, "col": 3 }` (two integers) |
+| Index base | 0. The first row is `row = 0` and the first column is `col = 0` |
+| Direction of `row` | Grows downward (row 0 is the top edge of the map) |
+| Direction of `col` | Grows to the right (column 0 is the left edge) |
+| Test zone | 10 rows × 14 columns: `row` from 0 to 9, `col` from 0 to 13 |
+| Cell size | Synthetic: 100 m × 100 m simulated. MOLA: nominal scale of the projection at the Martian equator |
+| Latitude/longitude | Planetocentric MOLA coordinates, east-positive longitude (0–360°). Accepted in `POST /routes`; the map includes centers and region |
 
-La conversión al plano local de Leaflet sigue siendo un detalle interno y no
-forma parte del contrato. La malla global es de 180 × 360 celdas de 1°. Para
-rutas geográficas, el backend usa la cuadrícula detallada si ambos puntos
-pertenecen a `region`; si alguno queda fuera, usa la malla global. Los índices
-de `path` son los de la cuadrícula seleccionada y cada punto incluye coordenadas
-geográficas para su representación.
+The conversion to Leaflet's local plane remains an internal detail and is not
+part of the contract. The global mesh is 180 × 360 cells of 1°. For
+geographic routes, the backend uses the detailed grid if both points
+belong to `region`; if either falls outside, it uses the global mesh. The indices
+in `path` are those of the selected grid and each point includes geographic
+coordinates for its representation.
 
-## Unidades
+## Units
 
-| Campo | Unidad | Rango / notas |
+| Field | Unit | Range / notes |
 |---|---|---|
-| `distance_m` | metros | ≥ 0. Suma de longitudes de los pasos × `cell_size_m`. En MOLA es aproximada: A* usa el tamaño nominal en el ecuador también a latitudes mayores |
-| `total_cost` | `cost_units` (adimensional) | ≥ 0. Suma de los costos de cada paso (ver modelo de costos) |
-| `elevation_m` | metros | Sintético o altura MOLA respecto al areoide |
-| `slope_deg` | grados | Pendiente sintética o derivada del raster MOLA |
-| `risk`, `mean_risk`, `max_risk` | adimensional | 0.0–1.0 si hay un indicador disponible. Sintético: riesgo simulado. MOLA: proxy de pendiente, no probabilidad de peligro |
+| `distance_m` | meters | ≥ 0. Sum of step lengths × `cell_size_m`. In MOLA it is approximate: A* uses the nominal size at the equator also at higher latitudes |
+| `total_cost` | `cost_units` (dimensionless) | ≥ 0. Sum of the cost of each step (see cost model) |
+| `elevation_m` | meters | Synthetic or MOLA height relative to the areoid |
+| `slope_deg` | degrees | Synthetic slope or derived from the MOLA raster |
+| `risk`, `mean_risk`, `max_risk` | dimensionless | 0.0–1.0 if an indicator is available. Synthetic: simulated risk. MOLA: slope proxy, not probability of hazard |
 
-## Formato de las celdas (campo `cells` de /map)
+## Cell format (`cells` field of /map)
 
-| Campo | Tipo | Obligatorio | Descripción |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `row` | entero | sí | Fila (0 = arriba) |
-| `col` | entero | sí | Columna (0 = izquierda) |
-| `elevation_m` | número | sí | Elevación en metros; en MOLA, respecto al areoide |
-| `slope_deg` | número | sí | Pendiente en grados |
-| `risk` | número 0.0–1.0 | sí | Indicador disponible; en MOLA válido es `min(slope_deg / 20, 1)`. En celdas MOLA inválidas vale 0 por compatibilidad, pero se bloquean y el indicador no está disponible |
-| `blocked` | booleano | sí | `true` si la celda no es transitable |
-| `valid` | booleano | solo MOLA | `false` si el valor de origen está marcado inválido; esas celdas se bloquean |
-| `latitude`, `longitude` | número | solo MOLA | Centro del pixel en grados planetocéntricos, longitud positiva este |
-| `sky_view_factor` | número 0.0–1.0 | no (solo regiones con capa de radiación, hoy `gale`) | Fracción del cielo no tapada por el relieve, derivada del DEM. Ausente en celdas inválidas |
-| `radiation_modeled` | número 0.0–1.0 | no (igual que `sky_view_factor`) | Índice relativo de radiación **MODELADO**; no es una dosis ni una medición por celda |
+| `row` | integer | yes | Row (0 = top) |
+| `col` | integer | yes | Column (0 = left) |
+| `elevation_m` | number | yes | Elevation in meters; in MOLA, relative to the areoid |
+| `slope_deg` | number | yes | Slope in degrees |
+| `risk` | number 0.0–1.0 | yes | Available indicator; in valid MOLA it is `min(slope_deg / 20, 1)`. In invalid MOLA cells it is 0 for compatibility, but they are blocked and the indicator is not available |
+| `blocked` | boolean | yes | `true` if the cell is not traversable |
+| `valid` | boolean | MOLA only | `false` if the source value is marked invalid; those cells are blocked |
+| `latitude`, `longitude` | number | MOLA only | Pixel center in planetocentric degrees, east-positive longitude |
+| `sky_view_factor` | number 0.0–1.0 | no (only regions with a radiation layer, today `gale`) | Fraction of the sky not blocked by the terrain, derived from the DEM. Absent in invalid cells |
+| `radiation_modeled` | number 0.0–1.0 | no (same as `sky_view_factor`) | Relative **MODELADO** (MODELED) radiation index; it is not a dose nor a per-cell measurement |
 
-`cells` es una lista plana con una entrada por celda, sin duplicados ni faltantes
-(140 celdas en el ejemplo sintético). MOLA usa el tamaño de su región procesada.
-La respuesta puede incluir `region` y `risk_available`. Si la región trae la capa de
-radiación MODELADA, incluye además `radiation_available: true` y `radiation_model`
-(etiqueta `"MODELADO"`, fórmula del índice, método, supuestos, límites y el ancla
-RAD con el estado de verificación de sus cifras). Sin la capa, esos campos no aparecen.
-En MOLA también incluye `risk_model` (`name`, `method`, `slope_scale_deg`,
-`interpretation`) y `risk_available: true` porque publica el proxy de pendiente
-para las celdas con datos válidos. No es un modelo de peligro ni una probabilidad.
+`cells` is a flat list with one entry per cell, without duplicates or gaps
+(140 cells in the synthetic example). MOLA uses the size of its processed region.
+The response may include `region` and `risk_available`. If the region carries the
+MODELED radiation layer, it also includes `radiation_available: true` and `radiation_model`
+(label `"MODELADO"`, index formula, method, assumptions, limits and the RAD
+anchor with the verification status of its figures). Without the layer, those fields do not appear.
+In MOLA it also includes `risk_model` (`name`, `method`, `slope_scale_deg`,
+`interpretation`) and `risk_available: true` because it publishes the slope proxy
+for cells with valid data. It is not a hazard model nor a probability.
 
-## Tratamiento de celdas bloqueadas
+## Handling of blocked cells
 
-- En sintético, `blocked: true` significa obstáculo o pendiente ≥ 20° (simulado). En MOLA, bloquea datos inválidos y pendientes iguales o mayores al umbral aplicado al procesar; el valor predeterminado 30° es demostrativo, no operacional.
-- Una celda bloqueada **no puede ser origen ni destino**: el backend responde `400 CELL_BLOCKED`.
-- A* nunca atraviesa celdas bloqueadas. Los movimientos diagonales no «cortan esquinas»: se exige que las dos celdas laterales estén libres.
-- El frontend dibuja las celdas bloqueadas y rechaza su selección como cortesía al usuario, pero **el backend siempre valida**.
-- Una celda libre puede ser inalcanzable si está rodeada de celdas bloqueadas: el backend responde `404 NO_ROUTE`.
+- In synthetic, `blocked: true` means an obstacle or slope ≥ 20° (simulated). In MOLA, it blocks invalid data and slopes equal to or greater than the threshold applied during processing; the default value 30° is demonstrative, not operational.
+- A blocked cell **cannot be an origin or destination**: the backend responds `400 CELL_BLOCKED`.
+- A* never crosses blocked cells. Diagonal moves do not "cut corners": both side cells must be free.
+- The frontend draws the blocked cells and rejects their selection as a courtesy to the user, but **the backend always validates**.
+- A free cell may be unreachable if it is surrounded by blocked cells: the backend responds `404 NO_ROUTE`.
 
-## Modelo de costos
+## Cost model
 
-**Fórmula**
+**Formula**
 
 ```
-costo_paso = factor_longitud * (1 + slope_weight * slope_deg + risk_weight * risk
+step_cost = length_factor * (1 + slope_weight * slope_deg + risk_weight * risk
                                  + radiation_weight * radiation_modeled)
 
-factor_longitud = 1.0       en movimientos ortogonales
-factor_longitud = raíz(2)   en movimientos diagonales
-slope_deg, risk y radiation_modeled son los de la celda de DESTINO del paso
-radiation_modeled = 0       si la región no trae la capa MODELADA
+length_factor = 1.0       on orthogonal moves
+length_factor = sqrt(2)   on diagonal moves
+slope_deg, risk and radiation_modeled are those of the step's DESTINATION cell
+radiation_modeled = 0     if the region does not carry the MODELED layer
 slope_weight = 0.05         risk_weight = 2.0         radiation_weight = 0.0
-(slope_weight y radiation_weight pueden cambiarse por solicitud, entre 0 y 100)
-total_cost = suma de costo_paso de todos los pasos de la ruta
+(slope_weight and radiation_weight can be changed per request, between 0 and 100)
+total_cost = sum of step_cost of all the steps of the route
 ```
 
-Todos los pesos son ≥ 0 y los valores de celda también, así que el multiplicador es ≥ 1 y
-la heurística octil de A* sigue siendo admisible. Con `radiation_weight = 0.0` (valor por
-defecto) los costos y las rutas son los mismos que antes de añadir la capa.
+All weights are ≥ 0 and the cell values also are, so the multiplier is ≥ 1 and
+A*'s octile heuristic remains admissible. With `radiation_weight = 0.0` (default
+value) the costs and routes are the same as before adding the layer.
 
-El origen no suma costo (se parte de él). Si origen y destino coinciden,
-`total_cost` y `distance_m` valen 0. El backend publica los pesos en
-`cost_model` de `/map`. En MOLA, `risk_weight` es 2.0 y se aplica al proxy
-topográfico definido arriba; el peso y la función de costo son demostrativos,
-no están calibrados para movilidad real.
+The origin adds no cost (the route starts from it). If origin and destination coincide,
+`total_cost` and `distance_m` are 0. The backend publishes the weights in
+`cost_model` of `/map`. In MOLA, `risk_weight` is 2.0 and is applied to the topographic
+proxy defined above; the weight and the cost function are demonstrative,
+not calibrated for real mobility.
 
 ## GET /api/v1/health
 
-Sin parámetros. Respuesta `200`:
+No parameters. Response `200`:
 
-| Campo | Tipo | Descripción |
+| Field | Type | Description |
 |---|---|---|
-| `status` | texto | Siempre `"ok"` |
-| `service` | texto | `"mars-explorer-lab-api"` |
-| `version` | texto | Versión de la aplicación |
-| `api_version` | texto | `"v1"` |
-| `data_source` | texto | Fuente activa: `"synthetic"` o `"mola"` |
+| `status` | text | Always `"ok"` |
+| `service` | text | `"mars-explorer-lab-api"` |
+| `version` | text | Application version |
+| `api_version` | text | `"v1"` |
+| `data_source` | text | Active source: `"synthetic"` or `"mola"` |
 
-**Respuesta real de GET /api/v1/health**
+**Real response of GET /api/v1/health**
 
 ```
 {
@@ -159,58 +159,58 @@ Sin parámetros. Respuesta `200`:
 
 ## GET /api/v1/map
 
-Sin parámetros. Respuesta `200` con estos campos:
+No parameters. Response `200` with these fields:
 
-| Campo | Tipo | Descripción |
+| Field | Type | Description |
 |---|---|---|
-| `name` | texto | Nombre de la zona |
-| `data_source` | texto | `"synthetic"` o `"mola"` |
-| `is_simulated` | booleano | `true` para sintético, `false` para MOLA |
-| `disclaimer` | texto | Procedencia y limitaciones (el frontend debe mostrarlo) |
-| `grid` | objeto | `rows` (entero), `cols` (entero), `cell_size_m` (número) |
-| `coordinate_system` | objeto | `type` = `"grid_index"`, `index_base` = 0, `row_axis` = `"down"`, `col_axis` = `"right"`, `description` |
-| `cost_model` | objeto | `formula`, `slope_weight`, `risk_weight`, `radiation_weight` (opcional, ≥ 0), `diagonal_length_factor`, `cost_unit` = `"cost_units"` |
-| `cells` | lista | Lista de celdas con el formato definido arriba |
-| `risk_available` | booleano | Si la fuente aporta un modelo de riesgo |
-| `risk_model` | objeto | Opcional; en MOLA describe el proxy topográfico y sus límites |
-| `radiation_available` | booleano | Opcional; `true` si las celdas traen la capa de radiación MODELADA |
-| `radiation_model` | objeto | Opcional; descripción de la capa MODELADA (ver `docs/FUENTES_DE_DATOS.md`) |
-| `region` | objeto | Opcional; límites geográficos en MOLA |
-| `provenance` | objeto | Opcional; solo en MOLA. Procedencia por capa presente (ver abajo) |
-| `global_grid` | objeto | Solo MOLA: dimensiones, resolución, límites y lista plana de celdas globales compactas |
+| `name` | text | Name of the zone |
+| `data_source` | text | `"synthetic"` or `"mola"` |
+| `is_simulated` | boolean | `true` for synthetic, `false` for MOLA |
+| `disclaimer` | text | Provenance and limitations (the frontend must show it) |
+| `grid` | object | `rows` (integer), `cols` (integer), `cell_size_m` (number) |
+| `coordinate_system` | object | `type` = `"grid_index"`, `index_base` = 0, `row_axis` = `"down"`, `col_axis` = `"right"`, `description` |
+| `cost_model` | object | `formula`, `slope_weight`, `risk_weight`, `radiation_weight` (optional, ≥ 0), `diagonal_length_factor`, `cost_unit` = `"cost_units"` |
+| `cells` | list | List of cells with the format defined above |
+| `risk_available` | boolean | Whether the source provides a risk model |
+| `risk_model` | object | Optional; in MOLA it describes the topographic proxy and its limits |
+| `radiation_available` | boolean | Optional; `true` if the cells carry the MODELED radiation layer |
+| `radiation_model` | object | Optional; description of the MODELED layer (see `docs/FUENTES_DE_DATOS.md`) |
+| `region` | object | Optional; geographic bounds in MOLA |
+| `provenance` | object | Optional; MOLA only. Provenance per layer present (see below) |
+| `global_grid` | object | MOLA only: dimensions, resolution, bounds and flat list of compact global cells |
 
-### Campo `provenance` (opcional)
+### `provenance` field (optional)
 
-Objeto cuyas claves son capas presentes en la respuesta y cuyo valor es
-`{label, source, in_cost, note?}`. `label` es una de `MEDIDO`, `DERIVADO`,
-`INDICADOR`, `MODELADO`, `INTERPRETADO`, `REFERENCIA` o `ÍNDICE DEL PROYECTO`.
-`in_cost` indica si la capa entra **directamente** al costo de A*. Solo se publica
-en fuentes reales (MOLA); en modo sintético no aparece. Hoy se emiten:
+An object whose keys are layers present in the response and whose value is
+`{label, source, in_cost, note?}`. `label` is one of `MEDIDO`, `DERIVADO`,
+`INDICADOR`, `MODELADO`, `INTERPRETADO`, `REFERENCIA` or `ÍNDICE DEL PROYECTO`.
+`in_cost` indicates whether the layer enters A*'s cost **directly**. It is only published
+for real sources (MOLA); in synthetic mode it does not appear. Today the following are emitted:
 
-| Capa | `label` | `in_cost` | Presente en |
+| Layer | `label` | `in_cost` | Present in |
 |---|---|---|---|
-| `elevation_m` | MEDIDO | `false` (entra a través de la pendiente) | todas las regiones MOLA |
-| `slope_deg` | DERIVADO | `true` | todas las regiones MOLA |
-| `risk` | DERIVADO (proxy `min(slope_deg/20, 1)`) | `true` | todas las regiones MOLA |
-| `blocked` | ÍNDICE DEL PROYECTO (regla: celda inválida o pendiente ≥ umbral demostrativo del procesado) | `false` (A* no la atraviesa) | todas las regiones MOLA |
-| `sky_view_factor` | DERIVADO | `false` (solo elige zonas candidatas de espera) | regiones con capa de radiación (Gale) |
-| `radiation_modeled` | MODELADO | `true` (peso 0 por defecto) | regiones con capa de radiación (Gale) |
-| `total_cost` | ÍNDICE DEL PROYECTO | `false` (es el resultado) | todas las regiones MOLA |
+| `elevation_m` | MEDIDO | `false` (enters through the slope) | all MOLA regions |
+| `slope_deg` | DERIVADO | `true` | all MOLA regions |
+| `risk` | DERIVADO (proxy `min(slope_deg/20, 1)`) | `true` | all MOLA regions |
+| `blocked` | ÍNDICE DEL PROYECTO (rule: invalid cell or slope ≥ demonstrative processing threshold) | `false` (A* does not cross it) | all MOLA regions |
+| `sky_view_factor` | DERIVADO | `false` (only chooses candidate waiting zones) | regions with a radiation layer (Gale) |
+| `radiation_modeled` | MODELADO | `true` (weight 0 by default) | regions with a radiation layer (Gale) |
+| `total_cost` | ÍNDICE DEL PROYECTO | `false` (it is the result) | all MOLA regions |
 
-`INDICADOR` (terreno blando), `INTERPRETADO` (geología) y `REFERENCIA` (ruta de
-Curiosity) no se emiten porque el backend no sirve esas capas. Por qué
-`sky_view_factor` es DERIVADO aquí y la capa de F3 es MODELADO: ver
+`INDICADOR` (soft terrain), `INTERPRETADO` (geology) and `REFERENCIA` (Curiosity
+route) are not emitted because the backend does not serve those layers. Why
+`sky_view_factor` is DERIVADO here and the F3 layer is MODELADO: see
 `docs/FUENTES_DE_DATOS.md`.
 
-Cada `global_grid.cells` registra `elevation_m`, `slope_deg`, `blocked` y
-`valid`; sus índices `row`/`col` se infieren del orden fila-columna del arreglo.
-La lista tiene 64.800 entradas. Las elevaciones son promedios en celdas de 1°;
-la pendiente es el máximo de las pendientes nativas MOLA dentro de cada celda.
-Las celdas con pendiente de 20° o más se bloquean por una regla demostrativa.
-La respuesta es JSON normal y supera 4 MB sin compresión; la API ofrece gzip
-para reducir el tráfico sin cambiar el contrato ni el JSON que recibe el navegador.
+Each `global_grid.cells` records `elevation_m`, `slope_deg`, `blocked` and
+`valid`; its `row`/`col` indices are inferred from the row-column order of the array.
+The list has 64,800 entries. The elevations are averages over 1° cells;
+the slope is the maximum of the native MOLA slopes inside each cell.
+Cells with a slope of 20° or more are blocked by a demonstrative rule.
+The response is normal JSON and exceeds 4 MB uncompressed; the API offers gzip
+to reduce traffic without changing the contract or the JSON the browser receives.
 
-**Respuesta real de GET /api/v1/map (abreviada: `cells` muestra 3 de las 140 celdas)**
+**Real response of GET /api/v1/map (abbreviated: `cells` shows 3 of the 140 cells)**
 
 ```
 {
@@ -246,30 +246,32 @@ para reducir el tráfico sin cambiar el contrato ni el JSON que recibe el navega
 }
 ```
 
-## POST /api/v1/routes — solicitud
+*(The API's literal texts, such as `disclaimer` and `formula`, are kept in Spanish exactly as the API returns them.)*
 
-| Campo | Tipo | Obligatorio | Descripción |
+## POST /api/v1/routes — request
+
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `origin` | objeto `{row, col}` o `{latitude, longitude}` | sí | Celda/punto de origen |
-| `destination` | objeto `{row, col}` o `{latitude, longitude}` | sí | Celda/punto de destino |
-| `allow_diagonal` | booleano | no (por defecto `true`) | Permite movimientos diagonales |
-| `slope_weight` | número 0–100 | no (por defecto el de `cost_model`, 0.05) | Peso de la pendiente para esta solicitud |
-| `radiation_weight` | número 0–100 | no (por defecto 0.0) | Peso del índice de radiación MODELADO para esta solicitud; sin efecto si la región no trae la capa |
+| `origin` | object `{row, col}` or `{latitude, longitude}` | yes | Origin cell/point |
+| `destination` | object `{row, col}` or `{latitude, longitude}` | yes | Destination cell/point |
+| `allow_diagonal` | boolean | no (default `true`) | Allows diagonal moves |
+| `slope_weight` | number 0–100 | no (default that of `cost_model`, 0.05) | Slope weight for this request |
+| `radiation_weight` | number 0–100 | no (default 0.0) | Weight of the MODELED radiation index for this request; no effect if the region does not carry the layer |
 
-- Usa ambos índices o ambas coordenadas para cada ubicación. No mezcles formatos
-  entre origen y destino, ni incluyas campos de ambos formatos en una ubicación.
-- `row` y `col` deben ser **enteros JSON** (`2`, no `"2"` ni `2.0`). Las
-  coordenadas deben tener latitud entre −90° y 90° y longitud entre 0° y 360°.
-  Un tipo/rango incorrecto produce `422 VALIDATION_ERROR`.
-- No se admiten campos adicionales: producen `422 VALIDATION_ERROR`.
-- Los pesos deben ser números JSON finitos entre 0 y 100 (no texto ni booleanos);
-  si no, `422 VALIDATION_ERROR`. `risk_weight` no se puede ajustar por solicitud.
-  Una solicitud sin pesos da exactamente la misma respuesta que antes de F6.
-- Un índice fuera de la cuadrícula es `400 OUT_OF_BOUNDS`. Las coordenadas
-  geográficas solo se aceptan con fuente MOLA; en modo sintético producen
+- Use both indices or both coordinates for each location. Do not mix formats
+  between origin and destination, nor include fields of both formats in one location.
+- `row` and `col` must be **JSON integers** (`2`, not `"2"` nor `2.0`). Coordinates
+  must have latitude between −90° and 90° and longitude between 0° and 360°.
+  A wrong type/range produces `422 VALIDATION_ERROR`.
+- Additional fields are not allowed: they produce `422 VALIDATION_ERROR`.
+- Weights must be finite JSON numbers between 0 and 100 (not text or booleans);
+  otherwise, `422 VALIDATION_ERROR`. `risk_weight` cannot be adjusted per request.
+  A request without weights gives exactly the same response as before F6.
+- An index outside the grid is `400 OUT_OF_BOUNDS`. Geographic coordinates
+  are only accepted with a MOLA source; in synthetic mode they produce
   `400 GEOGRAPHIC_ROUTE_UNAVAILABLE`.
 
-**Solicitud de ejemplo**
+**Example request**
 
 ```
 {
@@ -279,8 +281,8 @@ para reducir el tráfico sin cambiar el contrato ni el JSON que recibe el navega
 }
 ```
 
-**Solicitud MOLA en coordenadas** (permite seleccionar cualquier punto del
-planeta; ruta global aproximada si un extremo queda fuera de `region`):
+**MOLA request in coordinates** (allows selecting any point on the
+planet; approximate global route if an endpoint falls outside `region`):
 
 ```json
 {
@@ -289,30 +291,30 @@ planeta; ruta global aproximada si un extremo queda fuera de `region`):
 }
 ```
 
-## POST /api/v1/routes — respuesta 200
+## POST /api/v1/routes — 200 response
 
-| Campo | Tipo | Descripción |
+| Field | Type | Description |
 |---|---|---|
-| `status` | texto | `"ok"` |
-| `data_source`, `is_simulated`, `disclaimer` | texto, booleano, texto | Identificación de fuente y limitaciones |
-| `origin`, `destination` | `{row, col}` y opcionalmente latitud/longitud | Índices de la cuadrícula seleccionada y centro de celda en solicitudes geográficas |
-| `allow_diagonal` | booleano | Valor aplicado |
-| `path` | lista de `{row, col}` con coordenadas opcionales | Celdas en orden, **incluyendo** origen y destino; las rutas geográficas incluyen centros lat/lon para dibujar |
-| `summary` | objeto | Resultados numéricos (tabla siguiente) |
-| `resolution` | texto opcional | `"mola-detail"` o `"mola-global-1deg"` para solicitudes geográficas MOLA |
-| `cost_weights` | objeto opcional | `slope_weight`, `risk_weight`, `radiation_weight` aplicados. **Solo aparece si la solicitud trae algún peso** |
+| `status` | text | `"ok"` |
+| `data_source`, `is_simulated`, `disclaimer` | text, boolean, text | Identification of source and limitations |
+| `origin`, `destination` | `{row, col}` and optionally latitude/longitude | Indices of the selected grid and cell center in geographic requests |
+| `allow_diagonal` | boolean | Applied value |
+| `path` | list of `{row, col}` with optional coordinates | Cells in order, **including** origin and destination; geographic routes include lat/lon centers for drawing |
+| `summary` | object | Numerical results (next table) |
+| `resolution` | optional text | `"mola-detail"` or `"mola-global-1deg"` for MOLA geographic requests |
+| `cost_weights` | optional object | `slope_weight`, `risk_weight`, `radiation_weight` applied. **Only appears if the request carries any weight** |
 
-| Campo de `summary` | Tipo | Descripción |
+| `summary` field | Type | Description |
 |---|---|---|
-| `steps` | entero | Número de movimientos = `len(path) - 1` |
-| `distance_m` | número | Distancia sintética en metros |
-| `total_cost` | número | Costo total en `cost_units` |
-| `max_slope_deg` | número | Pendiente máxima entre las celdas de la ruta |
-| `mean_risk` | número | Riesgo medio de la ruta; no interpretable como evaluación si `risk_available` es falso |
-| `max_risk` | número | Riesgo máximo de la ruta; no interpretable como evaluación si `risk_available` es falso |
-| `nodes_expanded` | entero | Nodos expandidos por A* (informativo) |
+| `steps` | integer | Number of moves = `len(path) - 1` |
+| `distance_m` | number | Synthetic distance in meters |
+| `total_cost` | number | Total cost in `cost_units` |
+| `max_slope_deg` | number | Maximum slope among the route's cells |
+| `mean_risk` | number | Mean risk of the route; not interpretable as an assessment if `risk_available` is false |
+| `max_risk` | number | Maximum risk of the route; not interpretable as an assessment if `risk_available` is false |
+| `nodes_expanded` | integer | Nodes expanded by A* (informative) |
 
-**Respuesta real de POST /api/v1/routes**
+**Real response of POST /api/v1/routes**
 
 ```
 {
@@ -352,115 +354,116 @@ planeta; ruta global aproximada si un extremo queda fuera de `region`):
 }
 ```
 
-Caso límite: si `origin` y `destination` coinciden, `path` tiene una sola celda, `steps` = 0, `distance_m` = 0 y `total_cost` = 0.
+Edge case: if `origin` and `destination` coincide, `path` has a single cell, `steps` = 0, `distance_m` = 0 and `total_cost` = 0.
 
-## POST /api/v1/routes/shelter — modo «alerta solar»
+## POST /api/v1/routes/shelter — "solar alert" mode
 
-Dado un origen, devuelve la ruta de menor costo hasta la **zona candidata de
-espera** más cercana *por costo* (no por distancia). Es una ayuda de planificación
-educativa: no garantiza protección ni es una recomendación operacional.
+Given an origin, it returns the lowest-cost route to the nearest **candidate waiting
+zone** *by cost* (not by distance). It is an educational planning aid:
+it does not guarantee protection nor is it an operational recommendation.
 
-**Zona candidata de espera** (criterio del proyecto, `ÍNDICE DEL PROYECTO`): celda
-válida y libre con `slope_deg ≤ max_slope_deg` (10° por defecto) y
-`sky_view_factor ≤ max_sky_view_factor` (0.90 por defecto). `sky_view_factor`
-solo **elige** la zona; el costo de la ruta usa la fórmula de siempre, sin él
-(correlación −0,90 con la pendiente: penalizarlo castigaría dos veces). La
-justificación de los umbrales está en `docs/FUENTES_DE_DATOS.md`.
+**Candidate waiting zone** (project criterion, `ÍNDICE DEL PROYECTO`): a valid and free
+cell with `slope_deg ≤ max_slope_deg` (10° by default) and
+`sky_view_factor ≤ max_sky_view_factor` (0.90 by default). `sky_view_factor`
+only **chooses** the zone; the route cost uses the usual formula, without it
+(−0.90 correlation with the slope: penalizing it would punish twice). The
+justification of the thresholds is in `docs/FUENTES_DE_DATOS.md`.
 
-| Campo | Tipo | Obligatorio | Descripción |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `origin` | `{row, col}` o `{latitude, longitude}` | sí | Coordenadas solo dentro de `region` (la malla global no trae la capa) |
-| `allow_diagonal` | booleano | no (`true`) | Igual que en `/routes` |
-| `slope_weight`, `radiation_weight` | número 0–100 | no | Igual que en `/routes` |
-| `max_slope_deg` | número 0–90 | no (10) | Pendiente máxima de la zona candidata |
-| `max_sky_view_factor` | número 0–1 | no (0.90) | Cielo visible máximo de la zona candidata |
-| `max_distance_km` | número > 0 | no (sin valor por defecto = sin límite) | Distancia máxima de la ruta de menor costo hasta la zona candidata |
+| `origin` | `{row, col}` or `{latitude, longitude}` | yes | Coordinates only inside `region` (the global mesh does not carry the layer) |
+| `allow_diagonal` | boolean | no (`true`) | Same as in `/routes` |
+| `slope_weight`, `radiation_weight` | number 0–100 | no | Same as in `/routes` |
+| `max_slope_deg` | number 0–90 | no (10) | Maximum slope of the candidate zone |
+| `max_sky_view_factor` | number 0–1 | no (0.90) | Maximum visible sky of the candidate zone |
+| `max_distance_km` | number > 0 | no (no default value = no limit) | Maximum distance of the lowest-cost route to the candidate zone |
 
-Con `max_distance_km`, una zona candidata solo se acepta si **su ruta de menor
-costo** mide como mucho esa distancia (límite inclusivo); si la más barata la
-supera, se busca la siguiente. No se busca la ruta más barata entre todas las que
-caben en la distancia. Si ninguna zona alcanzable queda dentro: `404 NO_SHELTER`.
+With `max_distance_km`, a candidate zone is only accepted if **its lowest-cost
+route** measures at most that distance (inclusive limit); if the cheapest one
+exceeds it, the next one is searched. The cheapest route among all those that
+fit in the distance is not searched. If no reachable zone is within it: `404 NO_SHELTER`.
 
-No admite `destination` ni campos adicionales (`422`). La respuesta `200` tiene
-los mismos campos que `/routes` (`destination` es la zona elegida; `resolution`
-vale `"mola-detail"` en solicitudes geográficas) más `shelter`:
+It does not accept `destination` or additional fields (`422`). The `200` response has
+the same fields as `/routes` (`destination` is the chosen zone; `resolution`
+is `"mola-detail"` in geographic requests) plus `shelter`:
 
-| Campo de `shelter` | Descripción |
+| `shelter` field | Description |
 |---|---|
-| `term` | `"zona candidata de espera"` |
+| `term` | `"zona candidata de espera"` (candidate waiting zone) |
 | `label` | `"ÍNDICE DEL PROYECTO"` |
-| `criterion` | Texto con el criterio aplicado |
-| `max_slope_deg`, `max_sky_view_factor` | Umbrales aplicados |
-| `candidates_count` | Celdas de la región que cumplen el criterio (alcanzables o no) |
-| `distance_km` | Distancia recorrida hasta la zona, en km (siempre presente; igual a `summary.distance_m` / 1000 y aproximada como ella) |
-| `max_distance_km` | Límite aplicado; solo aparece si la solicitud lo trae |
-| `destination_slope_deg`, `destination_sky_view_factor` | Valores de la zona elegida |
-| `sky_view_factor_role` | Aclara que `sky_view_factor` no entra al costo |
-| `note` | Aviso de planificación educativa y límites del modelo |
+| `criterion` | Text with the criterion applied |
+| `max_slope_deg`, `max_sky_view_factor` | Thresholds applied |
+| `candidates_count` | Cells of the region that meet the criterion (reachable or not) |
+| `distance_km` | Distance traveled to the zone, in km (always present; equal to `summary.distance_m` / 1000 and approximate like it) |
+| `max_distance_km` | Limit applied; only appears if the request carries it |
+| `destination_slope_deg`, `destination_sky_view_factor` | Values of the chosen zone |
+| `sky_view_factor_role` | Clarifies that `sky_view_factor` does not enter the cost |
+| `note` | Educational planning notice and limits of the model |
 
-Si el origen ya cumple el criterio, `path` tiene una celda y `total_cost` = 0.
-Errores propios: `400 SHELTER_LAYER_UNAVAILABLE` y `404 NO_SHELTER` (tabla de
-errores). `CELL_BLOCKED` y `OUT_OF_BOUNDS` se comportan como en `/routes`, con
+If the origin already meets the criterion, `path` has one cell and `total_cost` = 0.
+Own errors: `400 SHELTER_LAYER_UNAVAILABLE` and `404 NO_SHELTER` (error
+table). `CELL_BLOCKED` and `OUT_OF_BOUNDS` behave as in `/routes`, with
 `field: "origin"`.
 
-## Modo MOLA
+## MOLA mode
 
-El backend selecciona una sola fuente para `/health`, `/map` y `/routes`:
+The backend selects a single source for `/health`, `/map` and `/routes`:
 
 ```bash
 MARS_DATA_SOURCE=mola
-# Opcional: sin esta variable se usa data/processed/mola_valles_marineris.json
+# Optional: without this variable data/processed/mola_valles_marineris.json is used
 MARS_MOLA_GRID_FILE=../data/processed/mola_valles_marineris.json
-# Alternativa por nombre (MARS_MOLA_GRID_FILE tiene prioridad):
+# Alternative by name (MARS_MOLA_GRID_FILE takes priority):
 MARS_MOLA_REGION=gale
 ```
 
-La región `gale` mantiene `data_source: "mola"` y el mismo formato de celdas.
-Su elevación procede del DEM combinado MOLA+HRSC (ver `docs/FUENTES_DE_DATOS.md`).
-El JSON incluye metadatos adicionales (`source`, `aggregation`) que la API v1 no
-publica.
+The `gale` region keeps `data_source: "mola"` and the same cell format.
+Its elevation comes from the combined MOLA+HRSC DEM (see `docs/FUENTES_DE_DATOS.md`).
+The JSON includes additional metadata (`source`, `aggregation`) that API v1 does not
+publish.
 
-En MOLA, `disclaimer` (en `/map` y `/routes`) es el texto que declara el JSON de
-la región activa. Si el JSON no trae uno válido, se usa el texto MOLA genérico.
-El campo sigue siendo un texto obligatorio, así que el contrato v1 no cambia.
-Para Gale empieza así: «DEM mezcla MOLA+HRSC 200 m agregado a 600 m; resolución
-de planificación, no de navegación», y cita a Fergason, Hare y Laura (2018).
-Gale es hoy la única región con la capa de radiación MODELADA (`sky_view_factor`,
-`radiation_modeled`, `radiation_model`); su disclaimer lo declara.
+In MOLA, `disclaimer` (in `/map` and `/routes`) is the text declared by the JSON of
+the active region. If the JSON carries no valid one, the generic MOLA text is used.
+The field remains a required text, so the v1 contract does not change.
+For Gale it begins: «DEM mezcla MOLA+HRSC 200 m agregado a 600 m; resolución
+de planificación, no de navegación» ("MOLA+HRSC blended 200 m DEM aggregated to 600 m;
+planning resolution, not navigation"), and cites Fergason, Hare and Laura (2018).
+Gale is today the only region with the MODELED radiation layer (`sky_view_factor`,
+`radiation_modeled`, `radiation_model`); its disclaimer declares it.
 
-La cuadrícula de detalle se genera desde los archivos originales PDS4/ENVI con
-`data/process_mola.py`; la malla global comprimida se genera con
-`python3 -m data.process_mola_global`. Ambos procesos no reemplazan archivos de
-salida existentes. El mapa MOLA añade `region`, centros geográficos,
-`global_grid` y el proxy de pendiente. Las celdas inválidas están bloqueadas y
-su valor neutral `risk: 0.0` no indica terreno de bajo riesgo. `distance_m` se
-calcula con el tamaño nominal en el ecuador marciano y es aproximada a otras
-latitudes. La malla global de 1° y el proxy son educativos, no una capa
-validada de movilidad o seguridad.
+The detail grid is generated from the original PDS4/ENVI files with
+`data/process_mola.py`; the compressed global mesh is generated with
+`python3 -m data.process_mola_global`. Neither process replaces existing
+output files. The MOLA map adds `region`, geographic centers,
+`global_grid` and the slope proxy. Invalid cells are blocked and
+their neutral value `risk: 0.0` does not indicate low-risk terrain. `distance_m` is
+computed with the nominal size at the Martian equator and is approximate at other
+latitudes. The 1° global mesh and the proxy are educational, not a validated
+mobility or safety layer.
 
-Sin una cuadrícula MOLA procesada, los endpoints de mapa/ruta responden
-`503 DATASET_UNAVAILABLE`; el modo sintético permanece como valor
-predeterminado.
+Without a processed MOLA grid, the map/route endpoints respond
+`503 DATASET_UNAVAILABLE`; synthetic mode remains the
+default.
 
-## Formato de errores
+## Error format
 
-Todos los errores (400, 404, 405, 422, 503) usan la misma estructura. `details` siempre es un objeto (puede estar vacío).
+All errors (400, 404, 405, 422, 503) use the same structure. `details` is always an object (it may be empty).
 
-| HTTP | `error.code` | Cuándo ocurre | Contenido de `details` |
+| HTTP | `error.code` | When it occurs | Content of `details` |
 |---|---|---|---|
-| 400 | `OUT_OF_BOUNDS` | Origen o destino fuera de la cuadrícula | `field`, `row`, `col`, `rows`, `cols` |
-| 400 | `CELL_BLOCKED` | Origen o destino en una celda bloqueada | `field`, `row`, `col` |
-| 400 | `SHELTER_LAYER_UNAVAILABLE` | `/routes/shelter` sin capa `sky_view_factor` (sintético, regiones sin la capa) o con origen geográfico fuera de `region` | `reason` (`no_sky_view_layer` o `outside_detail_region`), `data_source` |
-| 404 | `NO_ROUTE` | No existe camino transitable | `origin`, `destination`, `nodes_expanded` |
-| 404 | `NO_SHELTER` | Ninguna zona candidata de espera cumple el criterio, es alcanzable o queda dentro de `max_distance_km` | `origin`, `criterion`, `candidates_count`, `nodes_expanded` y, si se pidió, `max_distance_km` |
-| 404 | `NOT_FOUND` | URL inexistente | (vacío) |
-| 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido en la URL | (vacío) |
-| 422 | `VALIDATION_ERROR` | Cuerpo inválido: falta un campo, tipo incorrecto, campo extra o JSON mal formado | `problems`: lista de `{field, message}` |
-| 503 | `DATASET_UNAVAILABLE` | Fuente seleccionada o región MOLA procesada no disponible | `data_source` |
+| 400 | `OUT_OF_BOUNDS` | Origin or destination outside the grid | `field`, `row`, `col`, `rows`, `cols` |
+| 400 | `CELL_BLOCKED` | Origin or destination on a blocked cell | `field`, `row`, `col` |
+| 400 | `SHELTER_LAYER_UNAVAILABLE` | `/routes/shelter` without a `sky_view_factor` layer (synthetic, regions without the layer) or with a geographic origin outside `region` | `reason` (`no_sky_view_layer` or `outside_detail_region`), `data_source` |
+| 404 | `NO_ROUTE` | No traversable path exists | `origin`, `destination`, `nodes_expanded` |
+| 404 | `NO_SHELTER` | No candidate waiting zone meets the criterion, is reachable or falls within `max_distance_km` | `origin`, `criterion`, `candidates_count`, `nodes_expanded` and, if requested, `max_distance_km` |
+| 404 | `NOT_FOUND` | Nonexistent URL | (empty) |
+| 405 | `METHOD_NOT_ALLOWED` | HTTP method not allowed on the URL | (empty) |
+| 422 | `VALIDATION_ERROR` | Invalid body: missing field, wrong type, extra field or malformed JSON | `problems`: list of `{field, message}` |
+| 503 | `DATASET_UNAVAILABLE` | Selected source or processed MOLA region not available | `data_source` |
 
-`field` toma el valor `"origin"` o `"destination"`. El texto de `message` es apto para mostrarse al usuario (excepto `message` dentro de `problems`, que lo genera Pydantic en inglés y es solo para depuración).
+`field` takes the value `"origin"` or `"destination"`. The `message` text is suitable for showing to the user (except `message` inside `problems`, which Pydantic generates in English and is for debugging only).
 
-**Ejemplo real: 400 CELL_BLOCKED  (solicitud origen (3,6), destino (2,2))**
+**Real example: 400 CELL_BLOCKED  (request origin (3,6), destination (2,2))**
 
 ```
 {
@@ -476,7 +479,7 @@ Todos los errores (400, 404, 405, 422, 503) usan la misma estructura. `details` 
 }
 ```
 
-**Ejemplo real: 400 OUT_OF_BOUNDS  (solicitud origen (-1,0), destino (2,2))**
+**Real example: 400 OUT_OF_BOUNDS  (request origin (-1,0), destination (2,2))**
 
 ```
 {
@@ -494,7 +497,7 @@ Todos los errores (400, 404, 405, 422, 503) usan la misma estructura. `details` 
 }
 ```
 
-**Ejemplo real: 404 NO_ROUTE  (solicitud origen (2,1), destino (8,11))**
+**Real example: 404 NO_ROUTE  (request origin (2,1), destination (8,11))**
 
 ```
 {
@@ -510,7 +513,7 @@ Todos los errores (400, 404, 405, 422, 503) usan la misma estructura. `details` 
 }
 ```
 
-**Ejemplo real: 422 VALIDATION_ERROR  (solicitud sin `destination`)**
+**Real example: 422 VALIDATION_ERROR  (request without `destination`)**
 
 ```
 {
@@ -529,9 +532,9 @@ Todos los errores (400, 404, 405, 422, 503) usan la misma estructura. `details` 
 }
 ```
 
-## Reglas de compatibilidad
+## Compatibility rules
 
-- No renombrar ni eliminar campos. Añadir campos opcionales nuevos es compatible; el frontend debe ignorar los campos que no conozca.
-- No cambiar tipos (un entero no pasa a texto). No cambiar el orden de `path`.
-- Todo cambio incompatible exige una nueva versión de URL (`/api/v2`).
-- El frontend no debe depender del orden de `cells`; debe usar `row` y `col` de cada celda.
+- Do not rename or remove fields. Adding new optional fields is compatible; the frontend must ignore fields it does not know.
+- Do not change types (an integer does not become text). Do not change the order of `path`.
+- Any incompatible change requires a new URL version (`/api/v2`).
+- The frontend must not depend on the order of `cells`; it must use `row` and `col` of each cell.

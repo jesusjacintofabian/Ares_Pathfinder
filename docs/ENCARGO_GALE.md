@@ -1,111 +1,111 @@
-# Encargo: mapa de misión de exploración en Gale (Monte Sharp)
+# Brief: exploration mission map at Gale (Mount Sharp)
 
-> Archivo de contexto para quien implemente (Claude Code en VS Code u otra herramienta).
-> Contiene las decisiones ya tomadas, las fuentes verificadas y lo que **todavía no está verificado**.
-> No inventes datos, enlaces ni resultados: si algo no está aquí o no lo puedes comprobar, dilo.
+> Context file for whoever implements (Claude Code in VS Code or another tool).
+> It contains the decisions already made, the verified sources and what is **not yet verified**.
+> Do not invent data, links or results: if something is not here or you cannot check it, say so.
 
-## 1. Contexto del proyecto existente
-Mars Explorer Lab: API FastAPI + algoritmo A* + frontend Leaflet. Modos de datos `synthetic` y `mola`
-(`MARS_DATA_SOURCE`). Contrato en `docs/CONTRATO_DE_DATOS.md` (API v1). Lee también `README.md`,
-`docs/ARQUITECTURA.md` y `docs/FUENTES_DE_DATOS.md` antes de empezar.
+## 1. Context of the existing project
+Mars Explorer Lab: FastAPI API + A* algorithm + Leaflet frontend. Data modes `synthetic` and `mola`
+(`MARS_DATA_SOURCE`). Contract in `docs/CONTRATO_DE_DATOS.md` (API v1). Also read `README.md`,
+`docs/ARQUITECTURA.md` and `docs/FUENTES_DE_DATOS.md` before starting.
 
-Reglas que ya rigen el proyecto:
-- Los datos simulados se identifican como tales; ninguna ruta se presenta como «segura».
-- No subir archivos grandes ni credenciales. `main` exige Pull Request: trabaja en una rama.
-- Pytest antes de cada commit; commits pequeños `tipo(ámbito): descripción`.
+Rules that already govern the project:
+- Simulated data are identified as such; no route is presented as "safe".
+- Do not upload large files or credentials. `main` requires a Pull Request: work on a branch.
+- Pytest before every commit; small commits `type(scope): description`.
 
-## 2. Problema definido
-Un astronauta en caminata sobre la superficie de Marte debe llegar a un objetivo científico valioso y
-regresar al hábitat sin exponerse a pendientes que su traje no permite, a terreno blando ni a radiación
-evitable, y necesita poder cambiar de plan si el clima espacial empeora durante la salida.
+## 2. Defined problem
+An astronaut on a walk across the Martian surface must reach a valuable scientific target and
+return to the habitat without being exposed to slopes the suit does not allow, to soft terrain or to avoidable
+radiation, and needs to be able to change plans if space weather worsens during the outing.
 
-Criterios de la hackatón (NASA Space Apps 2026, «Interplanetary Survival Guide: Martian Map»):
-Impacto, Creatividad, Validez, Relevancia, Presentación (1 a 5). Se piden al menos 3 tipos de datos
-combinados. Prioridad: seguridad del astronauta.
+Hackathon criteria (NASA Space Apps 2026, "Interplanetary Survival Guide: Martian Map"):
+Impact, Creativity, Validity, Relevance, Presentation (1 to 5). At least 3 types of data
+combined are requested. Priority: astronaut safety.
 
-## 3. Decisiones tomadas
-- **Región:** cráter Gale, flanco noroeste del Monte Sharp (Aeolis Mons). Objetivo científico: formaciones
-  *boxwork* (crestas de 1 a 2 m con hondonadas arenosas, en una capa rica en sulfatos).
-- **Ventana provisional** (por confirmar): `--bounds -5.3 -4.5 137.3 138.0` (≈ 47 × 41 km; ≈ 237 × 206 celdas de 200 m).
-  Aterrizaje de Curiosity: 4.59°S, 137.44°E. Gale: 5.4°S, 137.8°E. Las coordenadas del *boxwork* **no están verificadas**.
-- **Opción A** para el terreno blando: Mars Trek se usa como **contexto visual**; el costo de A* sale de datos
-  numéricos. El indicador de terreno blando entra con peso 0 por defecto.
-- **Recursos del reto usados (3 de 5):** Mars Trek (JPL), mapa geológico USGS y ruta propuesta de Curiosity.
-  No se usan: NASA Worldview (es de la Tierra) ni las imágenes de Perseverance (Jezero, no Gale).
+## 3. Decisions made
+- **Region:** Gale Crater, northwest flank of Mount Sharp (Aeolis Mons). Scientific target: *boxwork*
+  formations (1 to 2 m ridges with sandy hollows, in a sulfate-rich layer).
+- **Provisional window** (to be confirmed): `--bounds -5.3 -4.5 137.3 138.0` (≈ 47 × 41 km; ≈ 237 × 206 cells of 200 m).
+  Curiosity landing: 4.59°S, 137.44°E. Gale: 5.4°S, 137.8°E. The *boxwork* coordinates **are not verified**.
+- **Option A** for soft terrain: Mars Trek is used as **visual context**; the A* cost comes from numerical
+  data. The soft-terrain indicator enters with weight 0 by default.
+- **Challenge resources used (3 of 5):** Mars Trek (JPL), USGS geologic map and Curiosity's proposed path.
+  Not used: NASA Worldview (it is about Earth) or the Perseverance images (Jezero, not Gale).
 
-### Etiquetas obligatorias por capa (visibles en la interfaz y en la API)
-| Capa | Etiqueta | Origen | ¿Entra al costo? |
+### Mandatory labels per layer (visible in the interface and in the API)
+| Layer | Label | Origin | Enters the cost? |
 |---|---|---|---|
-| Elevación | MEDIDO | DEM MOLA+HRSC 200 m (USGS) | Sí |
-| Pendiente | DERIVADO | Calculada desde la elevación | Sí |
-| Terreno blando | INDICADOR | THEMIS (mosaico cualitativo) / TES | Sí, peso bajo y ajustable (0 por defecto) |
-| Radiación | MODELADO | Ancla medida por RAD (Curiosity) + modelo | Sí, como modelo declarado |
-| Unidades geológicas | INTERPRETADO | Mapa USGS (Tanaka et al., 2014) | No (contexto) |
-| Ruta de Curiosity | REFERENCIA | Animación de NASA | No (comparación) |
-| Costo total | ÍNDICE DEL PROYECTO | Combinación de las anteriores | Es el resultado |
+| Elevation | MEDIDO (MEASURED) | 200 m MOLA+HRSC DEM (USGS) | Yes |
+| Slope | DERIVADO (DERIVED) | Computed from elevation | Yes |
+| Soft terrain | INDICADOR (INDICATOR) | THEMIS (qualitative mosaic) / TES | Yes, low and adjustable weight (0 by default) |
+| Radiation | MODELADO (MODELED) | RAD-measured anchor (Curiosity) + model | Yes, as a declared model |
+| Geologic units | INTERPRETADO (INTERPRETED) | USGS map (Tanaka et al., 2014) | No (context) |
+| Curiosity route | REFERENCIA (REFERENCE) | NASA animation | No (comparison) |
+| Total cost | ÍNDICE DEL PROYECTO (PROJECT INDEX) | Combination of the above | It is the result |
 
-El costo total es una puntuación de planificación con pesos ajustables: no es una probabilidad ni una
-garantía de seguridad.
+The total cost is a planning score with adjustable weights: it is not a probability nor a
+guarantee of safety.
 
-### Fórmula de costo
+### Cost formula
 ```
-costo_paso = longitud × (1 + w_pendiente·pendiente + w_blando·indicador_blando + w_radiación·radiación_modelada)
+step_cost = length × (1 + w_slope·slope + w_soft·soft_indicator + w_radiation·modeled_radiation)
 ```
-Todos los pesos ≥ 0 (así la heurística de A* sigue siendo admisible). Documenta los pesos por defecto.
+All weights ≥ 0 (so the A* heuristic remains admissible). Document the default weights.
 
-## 4. Fases
-| Fase | Tarea | Criterio de aceptación |
+## 4. Phases
+| Phase | Task | Acceptance criterion |
 |---|---|---|
-| **F1** | `data/process_dem.py`: recorta una ventana del DEM (GeoTIFF), calcula pendiente y genera un JSON de celdas con el formato de `mola_valles_marineris.json`. Región integrada en el backend como una fuente más | Pruebas con rasters GeoTIFF diminutos generados en las pruebas; las pruebas existentes siguen pasando |
-| **F2** | Capas visuales de Mars Trek (WMTS) y mosaico cualitativo THEMIS del USGS (peso 0 en el costo) | Capas activables; etiquetadas INDICADOR |
-| **F3** | Radiación modelada: tasa medida por RAD como ancla + cuánto cielo ve cada celda (calculable desde el DEM) | Etiquetada MODELADO; documentar supuestos |
-| **F4** | Capa de unidades geológicas del USGS (FeatureServer) | Etiquetada INTERPRETADO; avisar de la escala gruesa |
-| **F5** | Ruta de Curiosity georreferenciada a mano desde el GIF | Etiquetada REFERENCIA y marcada como aproximada |
-| **F6** | Costos de A* con pesos ajustables, modo «alerta solar» (ruta al refugio más cercano) y campo `provenance` por capa en la API | Campos nuevos opcionales; no romper el contrato v1 |
-| **F7** | Pruebas, integración (`tests/integration_check.py`) y actualización de la guía técnica | Todo documentado, nada afirmado sin ejecutarlo |
+| **F1** | `data/process_dem.py`: crops a window of the DEM (GeoTIFF), computes slope and generates a JSON of cells with the format of `mola_valles_marineris.json`. Region integrated into the backend as one more source | Tests with tiny GeoTIFF rasters generated in the tests; existing tests keep passing |
+| **F2** | Visual layers from Mars Trek (WMTS) and USGS qualitative THEMIS mosaic (weight 0 in the cost) | Toggleable layers; labeled INDICADOR |
+| **F3** | Modeled radiation: rate measured by RAD as an anchor + how much sky each cell sees (computable from the DEM) | Labeled MODELADO; document assumptions |
+| **F4** | USGS geologic units layer (FeatureServer) | Labeled INTERPRETADO; warn about the coarse scale |
+| **F5** | Curiosity route georeferenced by hand from the GIF | Labeled REFERENCIA and marked as approximate |
+| **F6** | A* costs with adjustable weights, "solar alert" mode (route to the nearest shelter) and a per-layer `provenance` field in the API | New fields optional; do not break the v1 contract |
+| **F7** | Tests, integration (`tests/integration_check.py`) and update of the technical guide | Everything documented, nothing claimed without running it |
 
-Empieza solo por **F1** y detente para revisión.
+Start only with **F1** and stop for review.
 
-## 5. Fuentes verificadas
-- **DEM MOLA+HRSC 200 m (global, GeoTIFF ≈ 11 GB):**
+## 5. Verified sources
+- **200 m MOLA+HRSC DEM (global, GeoTIFF ≈ 11 GB):**
   https://astrogeology.usgs.gov/search/map/mars_mgs_mola_mex_hrsc_blended_dem_global_200m
-  Archivo: https://planetarymaps.usgs.gov/mosaic/Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif
-  Licencias: MOLA CC0 y HRSC CC BY-SA 3.0 IGO. Citar: Fergason, Hare y Laura (2018).
-- **Mars Trek, servicios WMTS:** https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars
-  (imágenes en teselas; si falta una tesela, no hay cobertura).
-- **Mapa geológico de Marte (Tanaka et al., 2014, escala 1:20 000 000, dominio público):**
+  File: https://planetarymaps.usgs.gov/mosaic/Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif
+  Licenses: MOLA CC0 and HRSC CC BY-SA 3.0 IGO. Cite: Fergason, Hare and Laura (2018).
+- **Mars Trek, WMTS services:** https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars
+  (tiled images; if a tile is missing, there is no coverage).
+- **Geologic map of Mars (Tanaka et al., 2014, scale 1:20,000,000, public domain):**
   https://services.arcgis.com/nzS0F0zdNLvs7nc8/ArcGIS/rest/services/Mars_Geology_feature_layer/FeatureServer
-  Es muy grueso para una ventana de ~40 km.
-- **Mosaico de inercia térmica THEMIS (cualitativo, 8 bits, ≈ 100 m, ±60° de latitud, dominio público):**
+  It is very coarse for a ~40 km window.
+- **THEMIS thermal inertia mosaic (qualitative, 8-bit, ≈ 100 m, ±60° latitude, public domain):**
   https://astrogeology.usgs.gov/search/map/themis_thermal_inertia_mosaic_qualitative_30n300e_100_mpp
-  (esa es una tesela de ejemplo; **la tesela que cubre Gale hay que identificarla**).
-- **Inercia térmica TES numérica (20 píxeles/grado ≈ 3 km):** https://pds-geosciences.wustl.edu/missions/mgs/tes-timap.html
-  Demasiado gruesa para decidir rutas; sirve de contexto regional.
-- **Ruta propuesta de Curiosity (GIF 1041 × 586, créditos NASA/JPL-Caltech/ESA/UArizona/JHUAPL/MSSS/USGS):**
+  (this is a sample tile; **the tile covering Gale must be identified**).
+- **Numerical TES thermal inertia (20 pixels/degree ≈ 3 km):** https://pds-geosciences.wustl.edu/missions/mgs/tes-timap.html
+  Too coarse to decide routes; useful as regional context.
+- **Curiosity's proposed path (GIF 1041 × 586, credits NASA/JPL-Caltech/ESA/UArizona/JHUAPL/MSSS/USGS):**
   https://science.nasa.gov/resource/curiositys-proposed-path-up-mount-sharp/
-- **Radiación medida (RAD):** Hassler et al. (2014), Science 343 (6169), 1244797. Tasa de dosis medida en
-  Gale: 180 a 225 microgray por día, con pico cercano a 260 durante un evento solar.
+- **Measured radiation (RAD):** Hassler et al. (2014), Science 343 (6169), 1244797. Dose rate measured at
+  Gale: 180 to 225 micrograys per day, with a peak near 260 during a solar event.
 
-## 6. Lo que NO está verificado (no lo des por hecho)
-- Las coordenadas del *boxwork* y la ventana definitiva.
-- Si existe un mapa geológico local de Gale descargable con más detalle que el global.
-- Si el servidor del USGS permite leer el DEM por ventanas (lectura remota) o hay que descargar los 11 GB.
-- Si el mosaico THEMIS trae valores calibrados: se verificó que es **cualitativo/relativo**.
-- Qué tesela del mosaico THEMIS cubre Gale y qué productos de THEMIS ofrece hoy Mars Trek.
-- Cuánto cuesta adaptar `mola_reader.py` (lee PDS4/ENVI) al GeoTIFF, o si conviene una librería nueva
-  (por ejemplo `rasterio`). **Avisa antes de añadir dependencias.**
+## 6. What is NOT verified (do not take it for granted)
+- The *boxwork* coordinates and the final window.
+- Whether a downloadable local geologic map of Gale exists with more detail than the global one.
+- Whether the USGS server allows reading the DEM by windows (remote reading) or whether the 11 GB must be downloaded.
+- Whether the THEMIS mosaic carries calibrated values: it was verified that it is **qualitative/relative**.
+- Which tile of the THEMIS mosaic covers Gale and which THEMIS products Mars Trek offers today.
+- How costly it is to adapt `mola_reader.py` (reads PDS4/ENVI) to GeoTIFF, or whether a new library is preferable
+  (for example `rasterio`). **Warn before adding dependencies.**
 
-## 7. Reglas para quien implemente
-1. Rama nueva (`feature/gale-dem`); no hagas push a `main`.
-2. No inventes datos ni URLs. Cita cada fuente en `docs/FUENTES_DE_DATOS.md`.
-3. El DEM crudo va a `data/raw/` y debe quedar fuera de Git (`.gitignore`).
-4. No cambies el contrato de la API existente: los campos nuevos son opcionales.
-5. Antes de instalar una dependencia, di cuál y por qué.
-6. Usa modo Manual o Plan: pide permiso antes de descargas grandes o comandos con efectos.
-7. Nunca pegues tokens ni credenciales.
+## 7. Rules for whoever implements
+1. New branch (`feature/gale-dem`); do not push to `main`.
+2. Do not invent data or URLs. Cite each source in `docs/FUENTES_DE_DATOS.md`.
+3. The raw DEM goes to `data/raw/` and must stay out of Git (`.gitignore`).
+4. Do not change the existing API contract: new fields are optional.
+5. Before installing a dependency, say which one and why.
+6. Use Manual or Plan mode: ask for permission before large downloads or commands with side effects.
+7. Never paste tokens or credentials.
 
-## 8. Qué informar al terminar cada fase
-- Qué archivos cambiaste y por qué (`git diff main --stat`).
-- Qué **ejecutaste** y qué resultado dio (copia la salida real de `pytest`).
-- Qué **no** pudiste comprobar.
-- Qué decisiones quedan abiertas para el usuario.
+## 8. What to report at the end of each phase
+- Which files you changed and why (`git diff main --stat`).
+- What you **ran** and what result it gave (copy the actual `pytest` output).
+- What you **could not** check.
+- Which decisions remain open for the user.
