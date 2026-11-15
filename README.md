@@ -1,135 +1,137 @@
 # Ares Pathfinder 🚀
 
-Mapa de planificación para una caminata de superficie (EVA) en Marte, desarrollado para el **NASA Space Apps Challenge 2026**: *Interplanetary Survival Guide: Martian Map*.
+Planning map for a surface walk (EVA) on Mars, developed for the **NASA Space Apps Challenge 2026**: *Interplanetary Survival Guide: Martian Map*.
 
-> **Importante:** proyecto de participantes del NASA Space Apps Challenge. No es un producto oficial de la NASA ni una recomendación de seguridad operacional: es un prototipo educativo y de planificación.
+> **Important:** this is a NASA Space Apps Challenge participants' project. It is not an official NASA product nor an operational safety recommendation: it is an educational and planning prototype.
 
-## 🎯 Problema y solución
+*Note: the app's interface is in Spanish, so interface labels are quoted in Spanish with an English gloss in parentheses where needed.*
 
-**Problema.** Un astronauta en caminata sobre la superficie de Marte debe llegar a un objetivo científico valioso y regresar al hábitat sin exponerse a pendientes que su traje no permite ni a exposición evitable, y necesita poder cambiar de plan si el clima espacial empeora durante la salida.
+## 🎯 Problem and solution
 
-**Región de estudio.** Cráter Gale, flanco noroeste del Monte Sharp (Aeolis Mons), donde Curiosity ha estudiado formaciones *boxwork*. La ventana usada (≈ 47 × 41 km) es provisional y **no marca la ubicación de formaciones *boxwork***: sus coordenadas no están verificadas en este repositorio.
+**Problem.** An astronaut on a walk across the Martian surface must reach a valuable scientific target and return to the habitat without being exposed to slopes their suit does not allow or to avoidable exposure, and needs to be able to change plans if space weather worsens during the outing.
 
-**Solución.** Una API (FastAPI + A*) y un mapa interactivo (Leaflet) que calculan rutas sobre una cuadrícula de 600 m de la región y muestran de dónde viene cada capa:
+**Study region.** Gale Crater, northwest flank of Mount Sharp (Aeolis Mons), where Curiosity has studied *boxwork* formations. The window used (≈ 47 × 41 km) is provisional and **does not mark the location of *boxwork* formations**: their coordinates are not verified in this repository.
 
-| Capa | Etiqueta | Origen |
+**Solution.** An API (FastAPI + A*) and an interactive map (Leaflet) that compute routes over a 600 m grid of the region and show where each layer comes from:
+
+| Layer | Label | Origin |
 |---|---|---|
-| Elevación | MEDIDO | DEM MOLA+HRSC de 200 m (USGS), agregado a 600 m |
-| Pendiente | DERIVADO | Calculada a 200 m desde la elevación; se guarda la máxima del bloque |
-| Índice de apantallamiento topográfico | MODELADO | Fracción de cielo visible desde el DEM; **no es una dosis** |
-| Costo total de la ruta | ÍNDICE DEL PROYECTO | Combinación con pesos ajustables; **no es una probabilidad ni una garantía** |
+| Elevation | MEDIDO (MEASURED) | 200 m MOLA+HRSC DEM (USGS), aggregated to 600 m |
+| Slope | DERIVADO (DERIVED) | Computed at 200 m from elevation; the block maximum is stored |
+| Topographic shielding index | MODELADO (MODELED) | Fraction of sky visible from the DEM; **it is not a dose** |
+| Total route cost | ÍNDICE DEL PROYECTO (PROJECT INDEX) | Combination with adjustable weights; **it is not a probability or a guarantee** |
 
-- **Alerta solar:** `POST /api/v1/routes/shelter` calcula la ruta de menor costo hasta la «zona candidata de espera» más cercana (poca pendiente y relieve que tapa parte del cielo, según el modelo). Si no hay ninguna cerca, responde `NO_SHELTER`: es un resultado del modelo, no un fallo.
-- **Imagen óptica de contexto:** mosaico Viking MDIM 2.1 de NASA Mars Trek (capa opcional, requiere Internet).
-- **Pesos ajustables** de pendiente y radiación modelada por solicitud.
+- **Solar alert:** `POST /api/v1/routes/shelter` computes the lowest-cost route to the nearest "candidate waiting zone" (low slope and terrain that blocks part of the sky, according to the model). If there is none nearby, it responds `NO_SHELTER`: this is a model result, not a failure.
+- **Optical context image:** Viking MDIM 2.1 mosaic from NASA Mars Trek (optional layer, requires Internet).
+- **Adjustable weights** for slope and modeled radiation per request.
 
-**Lo que este prototipo todavía NO incluye** (para no sobrestimarlo): datos térmicos (THEMIS), mapa geológico de la USGS, la ruta propuesta de Curiosity georreferenciada, terreno blando, la elevación en el modelo de radiación, ni datos de clima espacial en tiempo real. La radiación es un modelo educativo con supuestos documentados en `docs/FUENTES_DE_DATOS.md`, anclado conceptualmente en las mediciones del instrumento RAD de Curiosity (cuyas cifras no se verificaron contra el artículo completo y no se usan en el cálculo).
+**What this prototype does NOT yet include** (so as not to overstate it): thermal data (THEMIS), the USGS geologic map, Curiosity's proposed path georeferenced, soft terrain, elevation in the radiation model, or real-time space weather data. Radiation is an educational model with assumptions documented in `docs/FUENTES_DE_DATOS.md`, conceptually anchored in the measurements of Curiosity's RAD instrument (whose figures were not verified against the full paper and are not used in the calculation).
 
-## 👥 Equipo
+## 👥 Team
 
-| Integrante | Responsabilidad |
+| Member | Responsibility |
 |---|---|
-| **Jesús** | Backend, algoritmo A*, procesamiento de datos, pruebas y documentación |
-| **Aldo** | Frontend (interfaz web con Leaflet) |
+| **Jesús** | Backend, A* algorithm, data processing, tests and documentation |
+| **Aldo** | Frontend (web interface with Leaflet) |
 
-## 🤖 Uso de IA
+## 🤖 Use of AI
 
-Este proyecto se desarrolló con asistencia de IA, y lo declaramos como pide NASA Space Apps:
+This project was developed with AI assistance, and we declare it as NASA Space Apps requires:
 
-- **Código, pruebas y documentación** se escribieron con ayuda de Claude (Anthropic), mediante chat y Claude Code. Los commits hechos con esa asistencia llevan la línea `Co-Authored-By: Claude` en su mensaje.
-- El equipo definió el problema, eligió la región y los recursos, revisó los resultados y es responsable del contenido.
-- Los **datos científicos** provienen de las fuentes citadas en `docs/FUENTES_DE_DATOS.md`, no de la IA.
-- Las imágenes del mapa (`frontend/assets/`) se generan con scripts a partir del raster MOLA (`data/render_mola_preview.py`, `data/process_mola_global.py`), no con IA generativa.
-- Hay un agente de apoyo para GitHub Copilot en `.github/agents/`.
+- **Code, tests and documentation** were written with the help of Claude (Anthropic), through chat and Claude Code. Commits made with that assistance carry the line `Co-Authored-By: Claude` in their message.
+- The team defined the problem, chose the region and the resources, reviewed the results and is responsible for the content.
+- The **scientific data** come from the sources cited in `docs/FUENTES_DE_DATOS.md`, not from the AI.
+- The map images (`frontend/assets/`) are generated with scripts from the MOLA raster (`data/render_mola_preview.py`, `data/process_mola_global.py`), not with generative AI.
+- There is a support agent for GitHub Copilot in `.github/agents/`.
 
-## 🧰 Tecnologías
+## 🧰 Technologies
 
-- **Frontend:** HTML, CSS y JavaScript sin frameworks.
-- **Mapa interactivo:** Leaflet 1.9.4 (incluido en `frontend/vendor/`, sin CDN).
-- **Backend:** Python, FastAPI, Uvicorn y Pydantic.
-- **Algoritmos:** A* para encontrar rutas (`algorithms/astar.py`, solo biblioteca estándar).
-- **Datos:** cuadrícula sintética reproducible y topografía MOLA (PDS4/ENVI, leída con NumPy).
-- **Control de versiones:** Git y GitHub.
-- **Pruebas:** Pytest, un script de integración y pruebas de la interfaz con jsdom (`cd frontend && npm test`; ver `frontend/README.md`).
+- **Frontend:** HTML, CSS and JavaScript without frameworks.
+- **Interactive map:** Leaflet 1.9.4 (included in `frontend/vendor/`, no CDN).
+- **Backend:** Python, FastAPI, Uvicorn and Pydantic.
+- **Algorithms:** A* for route finding (`algorithms/astar.py`, standard library only).
+- **Data:** reproducible synthetic grid and MOLA topography (PDS4/ENVI, read with NumPy).
+- **Version control:** Git and GitHub.
+- **Tests:** Pytest, an integration script and interface tests with jsdom (`cd frontend && npm test`; see `frontend/README.md`).
 
-## 📁 Estructura del repositorio
+## 📁 Repository structure
 
 ```text
 Ares_Pathfinder/
-├── frontend/                 # Interfaz web y mapa Leaflet
+├── frontend/                 # Web interface and Leaflet map
 │   ├── index.html
 │   ├── css/styles.css
 │   ├── js/ (config.js, api.js, map.js, app.js)
-│   ├── assets/mola-global.png   # relieve MOLA global, vista previa 0,5°
-│   └── vendor/leaflet/       # Leaflet 1.9.4 local
-├── backend/                  # API FastAPI
+│   ├── assets/mola-global.png   # global MOLA relief, 0.5° preview
+│   └── vendor/leaflet/       # Local Leaflet 1.9.4
+├── backend/                  # FastAPI API
 │   ├── app/ (main.py, errors.py, api/, models/, services/)
 │   ├── tests/
 │   ├── pytest.ini
 │   └── requirements.txt
-├── algorithms/               # Algoritmo A* y costos de ruta
+├── algorithms/               # A* algorithm and route costs
 ├── data/
-│   ├── generate_synthetic_grid.py   # genera los datos sintéticos
-│   ├── mola_reader.py               # lector de rasters MOLA (PDS4/ENVI)
-│   ├── process_mola.py              # recorta una región MOLA a JSON
-│   ├── geotiff_reader.py            # lector GeoTIFF int16 (local o por rangos HTTP)
-│   ├── process_dem.py               # recorta el DEM MOLA+HRSC 200 m a JSON (Gale)
-│   ├── render_mola_preview.py       # genera la vista global ligera del mapa
-│   ├── raw/mola/                    # originales (.xml y .hdr versionados; .img se descarga)
-│   ├── raw/gale/                    # recorte crudo del DEM de Gale (no versionado)
-│   └── processed/                   # cuadrículas JSON listas para la API
+│   ├── generate_synthetic_grid.py   # generates the synthetic data
+│   ├── mola_reader.py               # MOLA raster reader (PDS4/ENVI)
+│   ├── process_mola.py              # crops a MOLA region to JSON
+│   ├── geotiff_reader.py            # int16 GeoTIFF reader (local or via HTTP ranges)
+│   ├── process_dem.py               # crops the 200 m MOLA+HRSC DEM to JSON (Gale)
+│   ├── render_mola_preview.py       # generates the lightweight global map view
+│   ├── raw/mola/                    # originals (.xml and .hdr versioned; .img is downloaded)
+│   ├── raw/gale/                    # raw crop of the Gale DEM (not versioned)
+│   └── processed/                   # JSON grids ready for the API
 ├── docs/
 │   ├── PLAN_DE_FASES.md
 │   ├── ARQUITECTURA.md
 │   ├── FUENTES_DE_DATOS.md
 │   ├── CONTRATO_DE_DATOS.md
 │   └── FLUJO_GIT.md
-├── tests/                    # Comprobación de integración (servidores reales)
-├── .github/agents/           # Agente Ares.AI para GitHub Copilot
+├── tests/                    # Integration check (real servers)
+├── .github/agents/           # Ares.AI agent for GitHub Copilot
 ├── .gitignore
 └── README.md
 ```
 
-## 🗺️ Funcionalidades
+## 🗺️ Features
 
-1. Mostrar una zona en un mapa interactivo (cuadrícula sintética o vista global de relieve MOLA con región de detalle).
-2. Activar y desactivar capas de información.
-3. Seleccionar un punto de origen y un destino en cualquier lugar del globo MOLA.
-4. Calcular una ruta con A* en el backend: malla global aproximada de 1° o detalle local.
-5. Considerar costos de distancia, pendiente y el proxy de pendiente MOLA (o riesgo simulado en el modo sintético).
-6. Dibujar la ruta calculada sobre el mapa.
-7. Mostrar un resumen: distancia, costo, pasos, pendiente máxima y riesgo.
+1. Show an area on an interactive map (synthetic grid or global MOLA relief view with a detail region).
+2. Turn information layers on and off.
+3. Select an origin point and a destination anywhere on the MOLA globe.
+4. Compute a route with A* in the backend: approximate 1° global mesh or local detail.
+5. Consider distance costs, slope and the MOLA slope proxy (or simulated risk in synthetic mode).
+6. Draw the computed route on the map.
+7. Show a summary: distance, cost, steps, maximum slope and risk.
 
-El modo sintético identifica sus riesgos como simulados. En modo MOLA se muestra
-un proxy educativo de riesgo topográfico derivado únicamente de la pendiente:
-`min(pendiente / 20°, 1)`. Se calcula para la malla global y el detalle y también
-penaliza rutas. No es una probabilidad ni modela peligros geológicos o condiciones
-de misión; no debe interpretarse como evaluación de seguridad.
+Synthetic mode identifies its risks as simulated. In MOLA mode, an educational
+topographic-risk proxy derived solely from slope is shown:
+`min(slope / 20°, 1)`. It is computed for the global mesh and the detail, and it also
+penalizes routes. It is not a probability and does not model geological hazards or mission
+conditions; it must not be interpreted as a safety assessment.
 
-## 🛠️ Plan de trabajo y estado
+## 🛠️ Work plan and status
 
-| Fase | Nombre | Estado | Entregable |
+| Phase | Name | Status | Deliverable |
 |---|---|---|---|
-| 0 | Preparación | ✅ Hecha | Repositorio organizado y entorno preparado. |
-| 1 | Datos y mapa inicial | ✅ Hecha | Datos sintéticos y región MOLA documentadas en `docs/FUENTES_DE_DATOS.md`. |
-| 2 | Backend básico | ✅ Hecha | API con `/health`, `/map` y `/routes`. |
-| 3 | Frontend básico | ✅ Hecha | Mapa Leaflet con capas y controles. Pruebas jsdom y verificación en Firefox headless; queda la lista de comprobación manual (abajo) para otros navegadores y táctil. |
-| 4 | Rutas y riesgos | ✅ Hecha | A* con costos de pendiente y riesgo simulado o proxy topográfico MOLA. |
-| 5 | Pruebas e integración | 🔄 En curso | 445 pruebas Pytest, 29 pruebas jsdom e integración sintético/MOLA/Gale hechas; falta una guía técnica extendida. |
-| 6 | Cierre y entrega | ⏳ Pendiente | Demostración, formulario de Space Apps y lecciones aprendidas. |
+| 0 | Preparation | ✅ Done | Organized repository and prepared environment. |
+| 1 | Data and initial map | ✅ Done | Synthetic data and MOLA region documented in `docs/FUENTES_DE_DATOS.md`. |
+| 2 | Basic backend | ✅ Done | API with `/health`, `/map` and `/routes`. |
+| 3 | Basic frontend | ✅ Done | Leaflet map with layers and controls. jsdom tests and headless Firefox verification; the manual checklist (below) remains for other browsers and touch. |
+| 4 | Routes and risks | ✅ Done | A* with slope costs and simulated risk or MOLA topographic proxy. |
+| 5 | Testing and integration | 🔄 In progress | 445 Pytest tests, 29 jsdom tests and synthetic/MOLA/Gale integration done; an extended technical guide is missing. |
+| 6 | Wrap-up and delivery | ⏳ Pending | Demo, Space Apps form and lessons learned. |
 
-Las fases pueden modificarse si aparecen dificultades técnicas o si hace falta aprender alguna tecnología antes de continuar.
+Phases may change if technical difficulties arise or if a technology needs to be learned before continuing.
 
-## 🚀 Cómo comenzar
+## 🚀 Getting started
 
-### 1. Clonar el repositorio
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<usuario>/Ares_Pathfinder.git
+git clone https://github.com/<user>/Ares_Pathfinder.git
 cd Ares_Pathfinder
 ```
 
-### 2. Preparar el backend (desde la raíz, una sola vez)
+### 2. Prepare the backend (from the root, once)
 
 ```bash
 python3 -m venv .venv
@@ -137,232 +139,232 @@ source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-`requirements.txt` incluye FastAPI, Uvicorn, Pydantic, Pytest, httpx2 y **NumPy** (necesario para el lector MOLA; se importa incluso en modo sintético). Las versiones están fijadas; se verificaron con Python 3.12.3 (el entorno del autor usa Python 3.14).
+`requirements.txt` includes FastAPI, Uvicorn, Pydantic, Pytest, httpx2 and **NumPy** (needed by the MOLA reader; it is imported even in synthetic mode). Versions are pinned; they were verified with Python 3.12.3 (the author's environment uses Python 3.14).
 
-### 3. Comprobar que todo funciona
+### 3. Check that everything works
 
 ```bash
 cd backend
-python -m pytest -q          # deben pasar 445 pruebas
+python -m pytest -q          # 445 tests should pass
 ```
 
-Pruebas de la interfaz (jsdom, requieren Node.js 22.22+ o 24.15+):
+Interface tests (jsdom, require Node.js 22.22+ or 24.15+):
 
 ```bash
 cd frontend
-npm install                  # una vez; jsdom es solo dependencia de desarrollo
-npm test                     # deben pasar 29 pruebas
+npm install                  # once; jsdom is a development-only dependency
+npm test                     # 29 tests should pass
 ```
 
-### 4. Ejecutar backend y frontend
+### 4. Run backend and frontend
 
 ```bash
-# Terminal 1 — backend (desde backend/, con el entorno activado)
+# Terminal 1 — backend (from backend/, with the environment activated)
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-# Terminal 2 — frontend (desde frontend/)
+# Terminal 2 — frontend (from frontend/)
 python3 -m http.server 5500 --bind 127.0.0.1
-# Abrir http://127.0.0.1:5500
+# Open http://127.0.0.1:5500
 ```
 
-Documentación interactiva de la API en http://127.0.0.1:8000/docs.
+Interactive API documentation at http://127.0.0.1:8000/docs.
 
-### 5. Comprobación de integración (desde la raíz, con ambos servidores activos)
+### 5. Integration check (from the root, with both servers running)
 
 ```bash
-python3 tests/integration_check.py            # modo sintético: 26 comprobaciones
-python3 tests/integration_check.py --mola     # backend con MARS_DATA_SOURCE=mola (Valles Marineris): 30 comprobaciones
-python3 tests/integration_check.py --gale     # backend con MARS_DATA_SOURCE=mola MARS_MOLA_REGION=gale: 39 comprobaciones
+python3 tests/integration_check.py            # synthetic mode: 26 checks
+python3 tests/integration_check.py --mola     # backend with MARS_DATA_SOURCE=mola (Valles Marineris): 30 checks
+python3 tests/integration_check.py --gale     # backend with MARS_DATA_SOURCE=mola MARS_MOLA_REGION=gale: 39 checks
 ```
 
-Cada modo comprueba que el backend se inició como se espera: por ejemplo, `--mola` contra un
-backend de Gale falla a propósito.
+Each mode checks that the backend started as expected: for example, `--mola` against a
+Gale backend fails on purpose.
 
-### 6. Lista de comprobación manual en el navegador
+### 6. Manual browser checklist
 
-Las pruebas automáticas (jsdom) no pintan, y la verificación en Firefox headless no cubre
-pantallas reales, táctil ni otros navegadores. Antes de una demostración, revisa a mano, con
-ambos servidores activos (marca cada punto):
+Automated tests (jsdom) do not render, and headless Firefox verification does not cover
+real screens, touch or other browsers. Before a demo, check by hand, with
+both servers running (tick each item):
 
-**Modo sintético** (backend sin variables)
-- [ ] El banner dice «DATOS SIMULADOS» y no aparecen etiquetas de procedencia, pesos ni alerta solar.
-- [ ] Origen en fila 2, col 1 y destino en fila 2, col 12 → «Ruta calculada: 14 pasos, 1772.8 m».
-- [ ] Un clic en una celda bloqueada muestra el aviso y no la selecciona.
+**Synthetic mode** (backend without variables)
+- [ ] The banner says «DATOS SIMULADOS» ("SIMULATED DATA") and no provenance labels, weights or solar alert appear.
+- [ ] Origin at row 2, col 1 and destination at row 2, col 12 → «Ruta calculada: 14 pasos, 1772.8 m» ("Route computed: 14 steps, 1772.8 m").
+- [ ] A click on a blocked cell shows the warning and does not select it.
 
 **MOLA, Valles Marineris** (`MARS_DATA_SOURCE=mola`)
-- [ ] Las capas llevan etiquetas (MEDIDO, DERIVADO, ÍNDICE DEL PROYECTO) y al pasar el cursor se ve la fuente.
-- [ ] «Ir a zona MOLA»: un clic en una celda la selecciona; un clic fuera de la zona usa la malla global.
-- [ ] Pendiente y cuadrícula se activan y desactivan; el zoom y el arrastre van fluidos.
-- [ ] Capa de Perseverance: el clic en un marcador abre su ventana y al pasar por la trayectoria se ve su tooltip.
-- [ ] Con Internet: imagen Viking y nombres de lugares.
+- [ ] Layers carry labels (MEDIDO, DERIVADO, ÍNDICE DEL PROYECTO) and hovering shows the source.
+- [ ] «Ir a zona MOLA» ("Go to MOLA zone"): a click on a cell selects it; a click outside the zone uses the global mesh.
+- [ ] Slope and grid toggle on and off; zoom and drag are smooth.
+- [ ] Perseverance layer: clicking a marker opens its window and hovering over the trajectory shows its tooltip.
+- [ ] With Internet: Viking image and place names.
 
 **MOLA, Gale** (`MARS_DATA_SOURCE=mola MARS_MOLA_REGION=gale`)
-- [ ] Aparecen «Pesos del costo», «Alerta solar» y la casilla «Índice de apantallamiento» (MODELADO).
-- [ ] El deslizador y el campo numérico de cada peso se sincronizan; 150 muestra un error y deshabilita «Calcular ruta»; «Restablecer» vuelve a 0,05 y 0.
-- [ ] Una ruta muestra «Pesos aplicados»; con radiación 5 el costo sube.
-- [ ] La capa de apantallamiento pinta la zona y su leyenda explica `1 − radiation_modeled` y sus límites.
-- [ ] Alerta solar desde un origen libre: ruta ámbar discontinua, marcador «Zona candidata de espera», distancia, criterio y aviso educativo.
-- [ ] Con distancia máxima 5 km desde lat −4.79°, lon E 137.75° aparece el mensaje informativo de que no hay zona candidata (no un error).
-- [ ] Un origen fuera de la zona de detalle explica que la alerta solar solo funciona dentro.
-- [ ] Capa de Curiosity: los marcadores dentro de Gale abren su ventana sin seleccionar la celda.
-- [ ] En ningún texto aparece «refugio» ni se promete protección.
+- [ ] «Pesos del costo» ("Cost weights"), «Alerta solar» ("Solar alert") and the «Índice de apantallamiento» ("Shielding index", MODELADO) checkbox appear.
+- [ ] The slider and the numeric field of each weight stay in sync; 150 shows an error and disables «Calcular ruta» ("Compute route"); «Restablecer» ("Reset") returns to 0.05 and 0.
+- [ ] A route shows «Pesos aplicados» ("Applied weights"); with radiation 5 the cost goes up.
+- [ ] The shielding layer paints the zone and its legend explains `1 − radiation_modeled` and its limits.
+- [ ] Solar alert from a free origin: dashed amber route, «Zona candidata de espera» ("Candidate waiting zone") marker, distance, criterion and educational notice.
+- [ ] With maximum distance 5 km from lat −4.79°, lon E 137.75° the informational message appears saying there is no candidate zone (not an error).
+- [ ] An origin outside the detail zone explains that the solar alert only works inside it.
+- [ ] Curiosity layer: markers inside Gale open their window without selecting the cell.
+- [ ] The word «refugio» ("shelter") does not appear in any text and no protection is promised.
 
 **General**
-- [ ] Chrome, Firefox y Safari (o los que vayas a usar en la demostración).
-- [ ] Móvil o pantalla táctil: tocar celdas, arrastrar y hacer zoom con dos dedos.
-- [ ] Pantalla de alta densidad: las capas en canvas se ven nítidas.
-- [ ] `?perf=1` en la URL muestra el recuadro de medición con `canvases` y el tiempo de pintado.
+- [ ] Chrome, Firefox and Safari (or whichever you will use in the demo).
+- [ ] Mobile or touch screen: tap cells, drag and pinch-zoom.
+- [ ] High-density screen: canvas layers look sharp.
+- [ ] `?perf=1` in the URL shows the measurement box with `canvases` and the paint time.
 
-## 🌐 Datos geoespaciales
+## 🌐 Geospatial data
 
-Antes de utilizar datos reales:
+Before using real data:
 
-1. Seleccionar una zona de estudio pequeña.
-2. Registrar la fuente, el formato, la fecha de consulta y la licencia o condiciones de uso.
-3. Comprobar que pueden procesarse con las herramientas del proyecto.
-4. Documentar cómo se prepararon.
+1. Select a small study area.
+2. Record the source, format, query date and license or terms of use.
+3. Check that they can be processed with the project's tools.
+4. Document how they were prepared.
 
-Los archivos grandes no se incorporan al repositorio: el raster MOLA `megt90n000eb.img` (33 MB) está en `.gitignore` y se descarga desde PDS (ver más abajo). El label `.xml`, el header `.hdr`, las regiones procesadas (JSON pequeños) y la vista global optimizada (PNG) sí se versionan.
+Large files are not added to the repository: the MOLA raster `megt90n000eb.img` (33 MB) is in `.gitignore` and is downloaded from PDS (see below). The `.xml` label, the `.hdr` header, the processed regions (small JSONs) and the optimized global view (PNG) are versioned.
 
-## 🛰️ Modo topográfico MOLA
+## 🛰️ MOLA topographic mode
 
-La fuente es el producto `megt90n000eb` del archivo PDS4 de MOLA MEGDR: una matriz global de 2880 × 5760 elevaciones `SignedMSB2` (int16 big-endian), en metros respecto al areoide. Su resolución es 1/16°; 3.704461 km/píxel es la escala nominal en el ecuador marciano. El lector usa memoria mapeada y solo extrae la ventana geográfica solicitada para rutas.
+The source is the `megt90n000eb` product from the PDS4 MOLA MEGDR archive: a global matrix of 2880 × 5760 `SignedMSB2` elevations (big-endian int16), in meters relative to the areoid. Its resolution is 1/16°; 3.704461 km/pixel is the nominal scale at the Martian equator. The reader uses memory mapping and only extracts the geographic window requested for routes.
 
-El mapa incluye una imagen global de contexto (0,5°/píxel) y una malla MOLA
-global de navegación de 1° (180 × 360), guardada comprimida en
-`data/processed/mola_global_1deg.json.gz`. Al seleccionar dos puntos dentro del
-recorte activo (Valles Marineris por defecto), A* usa el detalle local; si uno
-queda fuera, usa la malla global aproximada. La malla global bloquea celdas con
-pendiente máxima nativa de 20° o más. Es una regla educativa y no representa
-una evaluación de seguridad o transitabilidad real. El mapa muestra también
-una máscara de esos bloqueos sobre el planeta.
-La API comprime automáticamente la respuesta JSON global con gzip para reducir
-el tráfico; el navegador la descomprime sin pasos adicionales.
+The map includes a global context image (0.5°/pixel) and a global MOLA
+navigation mesh of 1° (180 × 360), stored compressed in
+`data/processed/mola_global_1deg.json.gz`. When two points are selected inside the
+active crop (Valles Marineris by default), A* uses the local detail; if one
+falls outside, it uses the approximate global mesh. The global mesh blocks cells with
+a native maximum slope of 20° or more. This is an educational rule and does not represent
+a real safety or traversability assessment. The map also shows
+a mask of those blocks over the planet.
+The API automatically gzip-compresses the global JSON response to reduce
+traffic; the browser decompresses it without additional steps.
 
-La vista colorizada se regenera con `python3 data/render_mola_preview.py`. La
-malla de rutas y la máscara se generan juntas con `python3 -m data.process_mola_global`; requieren el raster MOLA original, y el generador
-no sobrescribe archivos existentes.
+The colorized view is regenerated with `python3 data/render_mola_preview.py`. The
+route mesh and the mask are generated together with `python3 -m data.process_mola_global`; they require the original MOLA raster, and the generator
+does not overwrite existing files.
 
-### Regiones incluidas
+### Included regions
 
-| Archivo | Región (lat. / lon. este) | Celdas | Pendiente máx. | Celdas bloqueadas | Uso |
+| File | Region (lat. / east lon.) | Cells | Max. slope | Blocked cells | Use |
 |---|---|---|---|---|---|
-| `data/processed/mola_valles_marineris.json` | −14° a −12° / 291° a 293° | 32 × 32 | 32.2° | 96 (umbral 20°) | **Predeterminada en modo MOLA.** Tiene unos 9 km de desnivel, así que A* debe rodear obstáculos. |
-| `data/processed/mola_region.json` | −1° a 1° / 179° a 181° | 32 × 32 | 2.5° | 0 (umbral 30°) | Muestra ecuatorial plana, útil como control. |
-| `data/processed/gale_monte_sharp_600m.json` | −5.31° a −4.50° / 137.30° a 138.01° | 80 × 70 (600 m) | 34.9° | 15 (umbral 30°) | Cráter Gale, flanco noroeste del Monte Sharp. **DEM MOLA+HRSC de 200 m**, agregado a 600 m (pendiente máxima del bloque). Ventana provisional. Incluye la capa de radiación **MODELADA** (cielo visible desde el DEM; no es una medición). |
+| `data/processed/mola_valles_marineris.json` | −14° to −12° / 291° to 293° | 32 × 32 | 32.2° | 96 (20° threshold) | **Default in MOLA mode.** It has about 9 km of relief, so A* has to go around obstacles. |
+| `data/processed/mola_region.json` | −1° to 1° / 179° to 181° | 32 × 32 | 2.5° | 0 (30° threshold) | Flat equatorial sample, useful as a control. |
+| `data/processed/gale_monte_sharp_600m.json` | −5.31° to −4.50° / 137.30° to 138.01° | 80 × 70 (600 m) | 34.9° | 15 (30° threshold) | Gale Crater, northwest flank of Mount Sharp. **200 m MOLA+HRSC DEM**, aggregated to 600 m (block maximum slope). Provisional window. Includes the **MODELED** radiation layer (sky visible from the DEM; not a measurement). |
 
-`POST /api/v1/routes` acepta los pesos opcionales `slope_weight` y `radiation_weight` (entre 0 y 100).
-En regiones con `sky_view_factor` (hoy, Gale), `POST /api/v1/routes/shelter` (modo «alerta solar») calcula
-la ruta a la **zona candidata de espera** más cercana por costo. En MOLA, `GET /api/v1/map` publica
-`provenance` con la etiqueta de cada capa. El frontend muestra esas etiquetas y, en Gale, los pesos, la capa de
-índice de apantallamiento y la alerta solar (ver `frontend/README.md`). Detalles en `docs/CONTRATO_DE_DATOS.md`. Es planificación educativa: ninguna
-ruta ni zona se presenta como segura.
+`POST /api/v1/routes` accepts the optional weights `slope_weight` and `radiation_weight` (between 0 and 100).
+In regions with `sky_view_factor` (today, Gale), `POST /api/v1/routes/shelter` ("solar alert" mode) computes
+the route to the nearest **candidate waiting zone** by cost. In MOLA, `GET /api/v1/map` publishes
+`provenance` with the label of each layer. The frontend shows those labels and, in Gale, the weights, the
+shielding index layer and the solar alert (see `frontend/README.md`). Details in `docs/CONTRATO_DE_DATOS.md`. This is educational planning: no
+route or zone is presented as safe.
 
-### Descargar el raster original (solo si quieres procesar otras regiones)
+### Download the original raster (only if you want to process other regions)
 
-Obtén el `.img`, `.xml` y `.hdr` desde el [directorio oficial de PDS Geosciences Node](https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg016/) y guárdalos sin modificar en `data/raw/mola/` (el `.xml` y el `.hdr` ya están en el repositorio; solo falta el `.img`). Comprueba el MD5 indicado en `docs/FUENTES_DE_DATOS.md`.
+Get the `.img`, `.xml` and `.hdr` from the [official PDS Geosciences Node directory](https://pds-geosciences.wustl.edu/mgs/urn-nasa-pds-mgs_mola_topography_derived/meg016/) and save them unmodified in `data/raw/mola/` (the `.xml` and `.hdr` are already in the repository; only the `.img` is missing). Check the MD5 given in `docs/FUENTES_DE_DATOS.md`.
 
-### Procesar una región nueva
+### Process a new region
 
 ```bash
 python data/process_mola.py \
   --bounds -14 -12 291 293 \
   --max-slope-deg 20 \
-  --output data/processed/mola_mi_region.json
+  --output data/processed/mola_my_region.json
 ```
 
-El destino debe ser nuevo: el procesador no sobrescribe archivos existentes. `--bounds` recibe `sur norte oeste este` en grados (latitud planetocéntrica, longitud positiva este entre 0° y 360°). La ventana no puede cruzar el meridiano 0 y está limitada a 250.000 celdas. Las celdas sin dato se marcan inválidas y bloqueadas. El umbral de bloqueo por pendiente (30° por defecto) es demostrativo.
+The destination must be new: the processor does not overwrite existing files. `--bounds` takes `south north west east` in degrees (planetocentric latitude, positive east longitude between 0° and 360°). The window cannot cross the 0 meridian and is limited to 250,000 cells. Cells without data are marked invalid and blocked. The slope blocking threshold (30° by default) is for demonstration.
 
-### Procesar una ventana del DEM MOLA+HRSC (200 m)
+### Process a window of the MOLA+HRSC DEM (200 m)
 
-El GeoTIFF global del USGS ocupa unos 11 GB y **no se descarga**. `data/process_dem.py` lee por rangos
-HTTP solo la ventana pedida y guarda un recorte crudo pequeño para reprocesar sin red. No añade
-dependencias: solo usa NumPy.
+The global USGS GeoTIFF is about 11 GB and is **not downloaded**. `data/process_dem.py` reads over
+HTTP ranges only the requested window and saves a small raw crop so it can be reprocessed without network. It adds no
+dependencies: it only uses NumPy.
 
 ```bash
 python data/process_dem.py \
   --dem https://planetarymaps.usgs.gov/mosaic/Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif \
   --bounds -5.3 -4.5 137.3 138.0 --aggregate 3 \
-  --save-raw data/raw/gale/mi_recorte.tif \
-  --output data/processed/gale_mi_ventana.json
+  --save-raw data/raw/gale/my_crop.tif \
+  --output data/processed/gale_my_window.json
 
-# Radiación MODELADA: el horizonte se busca hasta 10 km (también es el margen de lectura).
-# --horizon-radius-km 0 la desactiva.
+# MODELED radiation: the horizon is searched up to 10 km (this is also the read margin).
+# --horizon-radius-km 0 disables it.
 
-# Reprocesar después sin red, desde el recorte crudo:
-python data/process_dem.py --dem data/raw/gale/mi_recorte.tif \
-  --bounds -5.3 -4.5 137.3 138.0 --aggregate 3 --output data/processed/otra.json
+# Reprocess later without network, from the raw crop:
+python data/process_dem.py --dem data/raw/gale/my_crop.tif \
+  --bounds -5.3 -4.5 137.3 138.0 --aggregate 3 --output data/processed/other.json
 ```
 
-`--aggregate 3` agrupa 3 × 3 píxeles (celdas de 600 m): media de la elevación y máximo de la pendiente
-calculada a 200 m. Ni la salida ni el recorte sobrescriben archivos existentes. La procedencia y la
-verificación están en `docs/FUENTES_DE_DATOS.md`.
+`--aggregate 3` groups 3 × 3 pixels (600 m cells): mean of the elevation and maximum of the slope
+computed at 200 m. Neither the output nor the crop overwrites existing files. The provenance and
+verification are in `docs/FUENTES_DE_DATOS.md`.
 
-### Activar el modo MOLA en la API
+### Enable MOLA mode in the API
 
 ```bash
 cd backend
 MARS_DATA_SOURCE=mola uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Sin más configuración se usa Valles Marineris. Para elegir una región incluida por su nombre, usa `MARS_MOLA_REGION=gale` (o `ecuatorial` o `valles_marineris`). Para otro archivo, añade `MARS_MOLA_GRID_FILE=../data/processed/mola_mi_region.json`, que tiene prioridad. Si falta el archivo, la API responde `503 DATASET_UNAVAILABLE`.
+Without further configuration, Valles Marineris is used. To choose an included region by name, use `MARS_MOLA_REGION=gale` (or `ecuatorial` or `valles_marineris`). For another file, add `MARS_MOLA_GRID_FILE=../data/processed/mola_my_region.json`, which takes priority. If the file is missing, the API responds `503 DATASET_UNAVAILABLE`.
 
-La sección **Imágenes de misiones NASA** consulta en tiempo real el catálogo público [NASA Image and Video Library](https://images.nasa.gov/) y permite explorar imágenes por Perseverance, HiRISE, THEMIS, CTX y HRSC. Requiere conexión a Internet. Las imágenes son resultados del catálogo y se abren en su recurso de vista previa; la atribución específica se conserva en los registros de NASA. Esta galería es independiente de la cuadrícula MOLA y no modifica los datos usados por A*.
+The **NASA mission images** section ("Imágenes de misiones NASA") queries the public [NASA Image and Video Library](https://images.nasa.gov/) catalog in real time and lets you explore images by Perseverance, HiRISE, THEMIS, CTX and HRSC. It requires an Internet connection. The images are catalog results and are opened in their preview resource; the specific attribution is kept in NASA's records. This gallery is independent of the MOLA grid and does not modify the data used by A*.
 
-En modo MOLA el frontend muestra el relieve global colorizado generado localmente desde el producto MOLA; no necesita Internet. Usa «Marte completo» para la vista global y «Ir a zona MOLA» para acercarte al recorte de mayor detalle. Es posible seleccionar puntos en todo el mapa y calcular rutas aproximadas globales; las rutas dentro del recorte usan su resolución de detalle. La imagen Viking MDIM 2.1 de [NASA Mars Trek](https://trek.nasa.gov/mars/) está disponible como capa opcional en línea. Las capas de misiones y la galería están plegadas inicialmente para mantener el panel más despejado.
+In MOLA mode the frontend shows the colorized global relief generated locally from the MOLA product; it does not need Internet. Use «Marte completo» ("Whole Mars") for the global view and «Ir a zona MOLA» ("Go to MOLA zone") to zoom into the highest-detail crop. You can select points across the whole map and compute approximate global routes; routes inside the crop use its detail resolution. The Viking MDIM 2.1 image from [NASA Mars Trek](https://trek.nasa.gov/mars/) is available as an optional online layer. The mission layers and the gallery are initially collapsed to keep the panel clearer.
 
-Las solicitudes de ruta pueden usar índices locales `{row, col}` o coordenadas geográficas `{latitude, longitude}` en MOLA. La distancia usa un tamaño nominal de celda y es aproximada; las rutas globales tienen celdas de 1° (unos 59 km en el ecuador). El resultado **no** evalúa seguridad, riesgos geológicos ni condiciones de misión.
+Route requests can use local `{row, col}` indices or geographic `{latitude, longitude}` coordinates in MOLA. Distance uses a nominal cell size and is approximate; global routes have 1° cells (about 59 km at the equator). The result **does not** assess safety, geological hazards or mission conditions.
 
-## 🔌 Integración entre frontend y backend
+## 🔌 Frontend–backend integration
 
-El frontend envía al backend coordenadas geográficas para MOLA y recibe la ruta georreferenciada lista para dibujar. El formato exacto está en `docs/CONTRATO_DE_DATOS.md`; cualquier cambio de campos debe reflejarse allí y en la documentación técnica.
+The frontend sends geographic coordinates to the backend for MOLA and receives the georeferenced route ready to draw. The exact format is in `docs/CONTRATO_DE_DATOS.md`; any change to fields must be reflected there and in the technical documentation.
 
-## 🔀 Flujo de trabajo con Git y GitHub
+## 🔀 Git and GitHub workflow
 
-Trabajo individual: `main` se mantiene estable y se avanza con commits pequeños y descriptivos (`tipo(ámbito): descripción`). Para cambios grandes o experimentales se recomienda una rama corta y un Pull Request hacia `main`. Detalles en `docs/FLUJO_GIT.md`.
+Individual work: `main` is kept stable and progress is made with small, descriptive commits (`type(scope): description`). For large or experimental changes, a short branch and a Pull Request to `main` are recommended. Details in `docs/FLUJO_GIT.md`.
 
-## 📋 Reglas del proyecto
+## 📋 Project rules
 
-- No subir contraseñas, tokens, claves privadas ni credenciales (el `.gitignore` excluye `.env`, `*.pem` y `*.key`).
-- No subir `.venv/`, `__pycache__/` ni archivos de datos grandes.
-- Documentar las fuentes de los datos utilizados.
-- Identificar claramente los datos sintéticos y los resultados simulados.
-- No afirmar que una ruta es segura para una misión real: este prototipo es educativo.
-- Mantener actualizada la documentación cuando cambie la arquitectura o el formato de los datos.
-- Respetar las reglas del NASA Space Apps Challenge: listar todos los recursos externos usados y declarar el uso de IA.
-- Los datos derivados del DEM MOLA+HRSC conservan su atribución y licencia (MOLA: CC0; HRSC: CC BY-SA 3.0 IGO; ver `docs/FUENTES_DE_DATOS.md`).
+- Do not upload passwords, tokens, private keys or credentials (`.gitignore` excludes `.env`, `*.pem` and `*.key`).
+- Do not upload `.venv/`, `__pycache__/` or large data files.
+- Document the sources of the data used.
+- Clearly identify synthetic data and simulated results.
+- Do not claim that a route is safe for a real mission: this prototype is educational.
+- Keep the documentation up to date when the architecture or data format changes.
+- Respect the rules of the NASA Space Apps Challenge: list all external resources used and declare the use of AI.
+- Data derived from the MOLA+HRSC DEM keep their attribution and license (MOLA: CC0; HRSC: CC BY-SA 3.0 IGO; see `docs/FUENTES_DE_DATOS.md`).
 
-## 📚 Documentación
+## 📚 Documentation
 
-- **`docs/PLAN_DE_FASES.md`:** etapas y estado del trabajo.
-- **`docs/ARQUITECTURA.md`:** componentes y flujo de datos, incluido MOLA.
-- **`docs/FUENTES_DE_DATOS.md`:** procedencia y condiciones de uso de los datos.
-- **`docs/CONTRATO_DE_DATOS.md`:** formato de intercambio de la API v1.
-- **`docs/FLUJO_GIT.md`:** ramas, commits y Pull Requests.
+- **`docs/PLAN_DE_FASES.md`:** stages and status of the work.
+- **`docs/ARQUITECTURA.md`:** components and data flow, including MOLA.
+- **`docs/FUENTES_DE_DATOS.md`:** provenance and terms of use of the data.
+- **`docs/CONTRATO_DE_DATOS.md`:** exchange format of API v1.
+- **`docs/FLUJO_GIT.md`:** branches, commits and Pull Requests.
 
-## 🎓 Propósito
+## 🎓 Purpose
 
-Ares Pathfinder es un prototipo educativo para mostrar cómo se pueden combinar datos de la NASA (topografía, imagen orbital y un modelo de exposición) para planificar una salida de superficie en Marte, dejando siempre claro qué es dato medido, qué es derivado y qué es modelado.
+Ares Pathfinder is an educational prototype to show how NASA data (topography, orbital imagery and an exposure model) can be combined to plan a surface outing on Mars, always making clear what is measured data, what is derived and what is modeled.
 
 ---
 
-**Equipo:** Jesús (backend, datos y algoritmos) y Aldo (frontend)  
-**Repositorio:** Ares_Pathfinder  
-**Estado:** Prototipo funcional para NASA Space Apps Challenge 2026.
+**Team:** Jesús (backend, data and algorithms) and Aldo (frontend)  
+**Repository:** Ares_Pathfinder  
+**Status:** Functional prototype for NASA Space Apps Challenge 2026.
 
 
-## Capas de trayectorias rover
+## Rover trajectory layers
 
-En modo MOLA, el panel **Exploración de rovers** permite activar y desactivar capas para
-Perseverance (Jezero), Curiosity (Gale), Opportunity (Meridiani), Spirit (Gusev) y
-Zhurong (Utopia Planitia). Cada capa dibuja una polilínea de referencia, el sitio de
-aterrizaje y puntos geográficos destacados. Al elegir una de estas misiones en el
-selector, el mapa se centra en su región y activa su capa; la consulta de imágenes NASA
-sigue disponible como función complementaria.
+In MOLA mode, the **Exploración de rovers** ("Rover exploration") panel lets you turn layers on and off for
+Perseverance (Jezero), Curiosity (Gale), Opportunity (Meridiani), Spirit (Gusev) and
+Zhurong (Utopia Planitia). Each layer draws a reference polyline, the landing
+site and highlighted geographic points. When one of these missions is chosen in the
+selector, the map centers on its region and turns on its layer; the NASA image query
+remains available as a complementary function.
 
-**Nota de rigor:** las coordenadas de las polilíneas incluidas en este prototipo son
-trazados de referencia aproximados para interacción y demostración cartográfica; no
-son registros de telemetría ni recorridos oficiales completos. Se representan sobre
-la vista topográfica MOLA global, con la cuadrícula de detalle local cuando coincide
-con la región disponible. La vista global no convierte esa cobertura local en una
-cobertura topográfica de detalle para el cálculo de rutas.
+**Note on rigor:** the polyline coordinates included in this prototype are
+approximate reference traces for interaction and cartographic demonstration; they
+are not telemetry records or complete official traverses. They are shown over
+the global MOLA topographic view, with the local detail grid when it coincides
+with the available region. The global view does not turn that local coverage into
+detailed topographic coverage for route computation.
